@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Slide Animations</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, sans-serif;
+    background: #eceef1;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Skeleton app background ── */
+  .app-shell {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 0;
+    background: #eceef1;
+  }
+
+  .skeleton-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 56px;
+    padding: 0 24px;
+    background: #f7f8fa;
+    border-bottom: 1px solid #e2e5ea;
+    flex-shrink: 0;
+  }
+
+  .skeleton-block {
+    background: #dde1e7;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .skeleton-nav-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .skeleton-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .skeleton-nav-link {
+    height: 12px;
+    width: 72px;
+    border-radius: 4px;
+  }
+
+  .skeleton-nav-link.wide { width: 96px; }
+
+  .skeleton-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .skeleton-nav-search {
+    width: 180px;
+    height: 32px;
+    border-radius: 16px;
+  }
+
+  .skeleton-nav-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+
+  .skeleton-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 240px 1fr 280px;
+    gap: 20px;
+    padding: 24px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .skeleton-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .skeleton-card {
+    background: #f7f8fa;
+    border: 1px solid #e2e5ea;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .skeleton-card.fill {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .skeleton-line {
+    height: 10px;
+    border-radius: 4px;
+    background: #dde1e7;
+  }
+
+  .skeleton-line.title {
+    height: 14px;
+    width: 55%;
+  }
+
+  .skeleton-line.short { width: 40%; }
+  .skeleton-line.medium { width: 70%; }
+  .skeleton-line.long { width: 92%; }
+  .skeleton-line.full { width: 100%; }
+
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .skeleton-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #dde1e7;
+    flex-shrink: 0;
+  }
+
+  .skeleton-circle.sm {
+    width: 28px;
+    height: 28px;
+  }
+
+  .skeleton-stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .skeleton-tile {
+    height: 88px;
+    border-radius: 8px;
+    background: #e8ebf0;
+    border: 1px solid #e2e5ea;
+  }
+
+  @media (max-width: 1100px) {
+    .skeleton-main {
+      grid-template-columns: 200px 1fr;
+    }
+    .skeleton-col:last-child { display: none; }
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
+  .skeleton-block,
+  .skeleton-line,
+  .skeleton-circle,
+  .skeleton-tile {
+    animation: skeleton-pulse 2.4s ease-in-out infinite;
+  }
+
+  .skeleton-nav-link:nth-child(2) { animation-delay: 0.15s; }
+  .skeleton-nav-link:nth-child(3) { animation-delay: 0.3s; }
+  .skeleton-line:nth-child(2) { animation-delay: 0.1s; }
+  .skeleton-line:nth-child(3) { animation-delay: 0.2s; }
+  .skeleton-line:nth-child(4) { animation-delay: 0.3s; }
+  .skeleton-tile:nth-child(2) { animation-delay: 0.12s; }
+  .skeleton-tile:nth-child(3) { animation-delay: 0.24s; }
+
+  /* ── Controls panel ── */
+  .controls {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 1000;
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    width: 320px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+
+  .controls-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 12px;
+  }
+
+  /* ── Element card ── */
+  .el-card {
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .el-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    cursor: pointer;
+    user-select: none;
+    background: #fafafa;
+  }
+  .el-card-header:hover { background: #f3f3f3; }
+
+  .el-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .el-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .chevron {
+    font-size: 10px;
+    color: #aaa;
+    transition: transform 0.2s;
+  }
+  .el-card.open .chevron { transform: rotate(180deg); }
+
+  .el-card-body {
+    display: none;
+    padding: 12px;
+    border-top: 1px solid #f0f0f0;
+    background: white;
+  }
+  .el-card.open .el-card-body { display: block; }
+
+  /* ── Field styles ── */
+  .field { margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .field select {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    font-size: 12px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slider-row input[type=range] {
+    flex: 1;
+    accent-color: #4BD675;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    min-width: 36px;
+    text-align: right;
+  }
+
+
+  .notif-trigger-row { margin-bottom: 10px; }
+
+  .notif-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .notif-toggle-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    min-width: 20px;
+  }
+
+  .notif-toggle-btn {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 7px;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    color: #444;
+    transition: all 0.15s;
+  }
+  .notif-toggle-btn.visible {
+    background: #B61200;
+    border-color: #B61200;
+    color: white;
+  }
+
+  /* ── Toggle button ── */
+  .toggle-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #111;
+    color: white;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    transition: background 0.2s, opacity 0.15s;
+  }
+  .toggle-btn:hover { opacity: 0.85; }
+  .toggle-btn.is-open { background: #4BD675; color: #0F2333; }
+
+  /* ── CSS spec blocks (inside accordion) ── */
+  .css-block-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 3px;
+    margin-top: 8px;
+  }
+  .css-block-label:first-of-type { margin-top: 0; }
+
+  .css-block {
+    background: #f6f8fa;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 10px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 10.5px;
+    line-height: 1.7;
+    color: #1a1a2e;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  /* ── Scene elements ── */
+  .avatar-wrap {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 502;
+    cursor: pointer;
+  }
+
+  .avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    display: block;
+    user-select: none;
+  }
+
+  .notif-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .panel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 420px;
+    height: 100vh;
+    background: #FAFAFA;
+    border-radius: 0;
+    box-shadow: -2px 0 12px rgba(0,0,0,0.05), -1px 0 2px rgba(0,0,0,0.05);
+    z-index: 501;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Panel header ── */
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 58px;
+    background: white;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+
+  .panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: #383C38;
+    letter-spacing: -0.01em;
+  }
+
+  .panel-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .panel-icon-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #383C38;
+    transition: background 0.15s;
+  }
+  .panel-icon-btn:hover { background: #f3f3f3; }
+  .panel-icon-btn.active { background: #f3f3f3; }
+
+  /* ── Context menu (3-dot dropdown) ── matches Figma spl-dropdown */
+  .menu-anchor { position: relative; }
+
+  .context-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 200px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.05), 0 16px 48px rgba(0,0,0,0.05);
+    padding: 4px 0;
+    z-index: 510;
+    overflow: hidden;
+    /* hidden state — GSAP toggles this */
+    opacity: 0;
+    visibility: hidden;
+    transform-origin: top right;
+  }
+
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #383C38;
+    letter-spacing: 0.12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+  }
+  .context-menu-item:hover { background: #f3f3f3; }
+
+  .context-menu-item svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  /* ── Panel body ── */
+  .panel-body {
+    flex: 1;
+    background: white;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;   /* content sits at the bottom, above the input */
+    gap: 12px;
+    padding: 16px;
+  }
+
+  /* ── Suggestion chip (dark navy user-utterance pill) ── */
+  .suggestion-chip {
+    align-self: flex-end;
+    background: #11314A;
+    color: white;
+    font-size: 12px;
+    line-height: 1;
+    padding: 10px 16px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  /* ── Companion card list (Figma: SPL Companion / card / list) ── */
+  .companion-card {
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.05);
+    overflow: hidden;
+    color: #383C38;
+  }
+
+  /* Header */
+  .cc-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid #D6DAD6;
+  }
+  .cc-avatar {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #EFF3EF;
+    color: #6A6E6A;
+    font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cc-header-main { flex: 1; min-width: 0; }
+  .cc-title {
+    font-size: 20px; font-weight: 700; line-height: 24px;
+    color: #383C38;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cc-subline {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 2px;
+  }
+  .cc-subtitle { font-size: 14px; color: #6A6E6A; }
+  .cc-badge {
+    font-size: 12px; font-weight: 600; line-height: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: white;
+    white-space: nowrap;
+  }
+  .cc-badge-grey { background: #61798B; }
+  .cc-header-actions {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 6px; flex-shrink: 0;
+  }
+  .cc-contact-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white;
+    border: 1px solid #929692;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 14px; font-weight: 600;
+    color: #238740;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .cc-contact-btn:hover { background: #f6faf6; }
+  .cc-contact-btn svg { width: 16px; height: 16px; }
+  .cc-secondary-text { font-size: 12px; color: #556B82; }
+
+  /* Rows */
+  .cc-rows {
+    display: flex; flex-direction: column;
+    padding: 8px 16px;
+    gap: 16px;
+  }
+  .cc-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cc-checkbox {
+    flex-shrink: 0;
+    width: 18px; height: 18px;
+    border: 2px solid #929692;
+    border-radius: 2px;
+    background: white;
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+  }
+  .cc-checkbox[aria-checked="true"] {
+    background: #238740; border-color: #238740;
+  }
+  .cc-checkbox[aria-checked="true"]::after {
+    content: ''; position: absolute;
+    left: 4px; top: 0px; width: 5px; height: 10px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .cc-row-main { flex: 1; min-width: 0; }
+  .cc-row-top {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .cc-name {
+    flex: 1; min-width: 0;
+    font-size: 14px; font-weight: 700; line-height: 20px;
+    color: #383C38;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cc-address {
+    font-size: 12px; line-height: 16px; color: #6A6E6A;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Winston match badge (medium = subtle amber) */
+  .cc-match {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 2px;
+    height: 20px;
+    padding: 0 8px 0 4px;
+    border: 1px solid white;
+    border-radius: 4px;
+    background: #FBF5E5;
+    color: #855007;
+    font-size: 12px; font-weight: 600;
+  }
+  .cc-match svg { width: 12px; height: 12px; }
+  .cc-row-chevron {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer;
+    color: #6A6E6A; border-radius: 6px;
+  }
+  .cc-row-chevron:hover { background: #f3f3f3; }
+  .cc-row-chevron svg { width: 16px; height: 16px; }
+
+  /* Footer */
+  .cc-footer {
+    display: flex; justify-content: space-between;
+    padding: 8px;
+    background: #F6FAF6;
+    border-top: 1px solid #D6DAD6;
+  }
+  .cc-footer-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: none; cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    color: #383C38;
+  }
+  .cc-footer-btn:hover { background: #eef3ee; }
+  .cc-footer-btn svg { width: 16px; height: 16px; }
+
+  /* ── Panel footer / input bar ── */
+  .panel-footer {
+    flex-shrink: 0;
+    background: white;
+    padding: 16px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .panel-input-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #FAFAFA;
+    border-radius: 20px;
+    padding: 8px 10px 8px 14px;
+    border: 1.5px solid #9CD2A8;
+  }
+
+  .panel-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13.5px;
+    color: #1a1a1a;
+    background: transparent;
+    font-family: inherit;
+  }
+  .panel-input::placeholder { color: #aaa; }
+
+  .panel-send-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    padding: 0;
+  }
+  .panel-send-btn:hover { opacity: 0.65; }
+
+  .panel-footer-caption {
+    text-align: center;
+    font-size: 10.5px;
+    color: #aaa;
+  }
+
+  /* Motion is driven entirely by GSAP (see <script>). The panel starts
+     off-screen; GSAP sets its hidden state on load and tweens transforms. */
+
+  /* ── Job List layer (slides in over chat stream) ── */
+  .panel-body-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The chat stream and the job list layer both fill the same space */
+  .panel-body {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+  }
+
+  .job-list-layer {
+    position: absolute;
+    inset: 0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    /* initial off-screen position set by GSAP in setInitialStates() */
+  }
+
+  .job-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 72px;
+  }
+
+  .job-list-floating-actions {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #F6FAF6;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.05);
+    z-index: 2;
+  }
+
+  .job-list-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #383C38;
+  }
+
+  .job-list-action-btn:hover { background: #eef3ee; }
+
+  .job-list-action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .job-list-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #F0F0F0;
+    min-height: 56px;
+  }
+
+  .job-list-row:last-child {
+    border-bottom: none;
+  }
+
+  /* ── Panel header back-button state ── */
+  .panel-header-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #383C38;
+    border: none;
+    background: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .panel-header-back:hover { background: #f3f3f3; }
+  .panel-header-back svg { width: 18px; height: 18px; }
+
+  /* ── Candidate application layer (slides in over job list) ── */
+  .candidate-app-layer {
+    position: absolute;
+    inset: 0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+  }
+
+  .candidate-app-scroll {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ca-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100%;
+    color: #383C38;
+  }
+
+  .ca-tabs {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid #D6DAD6;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  .ca-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 12px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #6A6E6A;
+    border: none;
+    background: none;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .ca-tab.active {
+    color: #383C38;
+  }
+
+  .ca-tab.active::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 0;
+    height: 3px;
+    background: #238740;
+    border-radius: 2px 2px 0 0;
+  }
+
+  .ca-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    color: #238740;
+  }
+
+  .ca-tab-icon svg { width: 14px; height: 14px; }
+
+  .ca-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    flex-shrink: 0;
+  }
+
+  .ca-segment {
+    display: flex;
+    flex: 1;
+    max-width: 220px;
+    background: #EFF3EF;
+    border-radius: 8px;
+    padding: 2px;
+  }
+
+  .ca-segment-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    cursor: pointer;
+    background: transparent;
+    color: #383C38;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .ca-segment-btn.active {
+    background: #0064D9;
+    color: white;
+  }
+
+  .ca-linkedin {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0A66C2;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .ca-linkedin:hover { text-decoration: underline; }
+
+  .ca-linkedin svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .ca-body {
+    flex: 1;
+    padding: 0 16px 16px;
+  }
+
+  .ca-section + .ca-section {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #F0F0F0;
+  }
+
+  .ca-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    margin-bottom: 16px;
+  }
+
+  .ca-entry + .ca-entry {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #F0F0F0;
+  }
+
+  .ca-entry-date {
+    font-size: 12px;
+    line-height: 16px;
+    color: #6A6E6A;
+    margin-bottom: 4px;
+  }
+
+  .ca-entry-title {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    margin-bottom: 2px;
+  }
+
+  .ca-entry-sub {
+    font-size: 14px;
+    line-height: 20px;
+    margin-bottom: 8px;
+  }
+
+  .ca-entry-desc {
+    font-size: 14px;
+    line-height: 20px;
+    color: #383C38;
+  }
+
+  .ca-show-more {
+    display: inline;
+    margin-top: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #0070F2;
+    cursor: pointer;
+  }
+
+  .ca-show-more:hover { text-decoration: underline; }
+
+  .ca-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    background: #F6FAF6;
+    border-top: 1px solid #D6DAD6;
+    flex-shrink: 0;
+    margin-top: auto;
+  }
+
+  .ca-footer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #383C38;
+  }
+
+  .ca-footer-btn:hover { background: #eef3ee; }
+
+  .ca-footer-btn svg { width: 16px; height: 16px; }
+
+  .job-list-row { cursor: pointer; }
+  .job-list-row:hover { background: #FAFAFA; }
+</style>
+</head>
+<body>
+
+<div class="app-shell" aria-hidden="true">
+  <header class="skeleton-nav">
+    <div class="skeleton-block skeleton-nav-logo"></div>
+    <nav class="skeleton-nav-links">
+      <div class="skeleton-block skeleton-nav-link wide"></div>
+      <div class="skeleton-block skeleton-nav-link"></div>
+      <div class="skeleton-block skeleton-nav-link"></div>
+      <div class="skeleton-block skeleton-nav-link"></div>
+    </nav>
+    <div class="skeleton-nav-actions">
+      <div class="skeleton-block skeleton-nav-search"></div>
+      <div class="skeleton-block skeleton-nav-avatar"></div>
+    </div>
+  </header>
+
+  <main class="skeleton-main">
+    <aside class="skeleton-col">
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+      <div class="skeleton-card fill">
+        <div class="skeleton-row">
+          <div class="skeleton-circle sm"></div>
+          <div class="skeleton-stack">
+            <div class="skeleton-line medium"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-circle sm"></div>
+          <div class="skeleton-stack">
+            <div class="skeleton-line long"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-circle sm"></div>
+          <div class="skeleton-stack">
+            <div class="skeleton-line medium"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-circle sm"></div>
+          <div class="skeleton-stack">
+            <div class="skeleton-line long"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="skeleton-col">
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-grid">
+          <div class="skeleton-tile"></div>
+          <div class="skeleton-tile"></div>
+          <div class="skeleton-tile"></div>
+        </div>
+      </div>
+      <div class="skeleton-card fill">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line full"></div>
+        <div class="skeleton-line full"></div>
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line full"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line full"></div>
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line full"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </section>
+
+    <aside class="skeleton-col">
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-row">
+          <div class="skeleton-circle"></div>
+          <div class="skeleton-stack">
+            <div class="skeleton-line medium"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+      <div class="skeleton-card fill">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line long"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line long"></div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="controls">
+  <div class="controls-title">Animation tester</div>
+
+  <button class="toggle-btn" id="toggleBtn" onclick="toggle()">Open panel</button>
+
+  <!-- Avatar card -->
+  <div class="el-card" id="card-avatar">
+    <div class="el-card-header" onclick="toggleCard('avatar')">
+      <div class="el-card-title">
+        <span class="el-dot" style="background:#4BD675"></span>
+        Avatar
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="el-card-body">
+      <div class="field">
+        <label>Variant</label>
+        <select id="av-variant" onchange="onCtrlChange()">
+          <option value="power2">Power2 (smooth)</option>
+          <option value="power4">Power4 (sharp)</option>
+          <option value="back">Back (overshoot)</option>
+          <option value="elastic">Elastic (springy)</option>
+          <option value="bounce">Bounce</option>
+          <option value="expo">Expo (snappy)</option>
+          <option value="circ">Circ</option>
+          <option value="sine">Sine (gentle)</option>
+          <option value="none">None (linear)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Duration</label>
+        <div class="slider-row">
+          <input type="range" id="av-dur" min="100" max="2000" step="50" value="400" oninput="updateSliderVal(this,'av-dur-val')" onchange="onCtrlChange()">
+          <span class="slider-val" id="av-dur-val">0.40s</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Delay</label>
+        <div class="slider-row">
+          <input type="range" id="av-delay" min="0" max="1500" step="50" value="0" oninput="updateSliderVal(this,'av-delay-val')" onchange="onCtrlChange()">
+          <span class="slider-val" id="av-delay-val">0.00s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification card -->
+  <div class="el-card" id="card-notif">
+    <div class="el-card-header" onclick="toggleCard('notif')">
+      <div class="el-card-title">
+        <span class="el-dot" style="background:#B61200"></span>
+        Notification
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="el-card-body">
+      <div class="field notif-trigger-row">
+        <div class="notif-toggle-wrap">
+          <span class="notif-toggle-label" id="notif-status-label">Off</span>
+          <button class="notif-toggle-btn" id="notifToggleBtn" onclick="triggerNotif()">Show</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Variant</label>
+        <select id="nt-variant" onchange="onCtrlChange()">
+          <option value="power2">Power2 (smooth)</option>
+          <option value="power4">Power4 (sharp)</option>
+          <option value="back">Back (overshoot)</option>
+          <option value="elastic">Elastic (springy)</option>
+          <option value="bounce">Bounce</option>
+          <option value="expo">Expo (snappy)</option>
+          <option value="circ">Circ</option>
+          <option value="sine">Sine (gentle)</option>
+          <option value="none">None (linear)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Duration</label>
+        <div class="slider-row">
+          <input type="range" id="nt-dur" min="100" max="2000" step="50" value="300" oninput="updateSliderVal(this,'nt-dur-val')" onchange="onCtrlChange()">
+          <span class="slider-val" id="nt-dur-val">0.30s</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Delay</label>
+        <div class="slider-row">
+          <input type="range" id="nt-delay" min="0" max="1500" step="50" value="0" oninput="updateSliderVal(this,'nt-delay-val')" onchange="onCtrlChange()">
+          <span class="slider-val" id="nt-delay-val">0.00s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel card -->
+  <div class="el-card" id="card-panel">
+    <div class="el-card-header" onclick="toggleCard('panel')">
+      <div class="el-card-title">
+        <span class="el-dot" style="background:#4a86e8"></span>
+        Panel
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="el-card-body">
+      <div class="field">
+        <label>Variant</label>
+        <select id="pn-variant" onchange="onCtrlChange()">
+          <option value="power2">Power2 (smooth)</option>
+          <option value="power4">Power4 (sharp)</option>
+          <option value="back">Back (overshoot)</option>
+          <option value="elastic">Elastic (springy)</option>
+          <option value="bounce">Bounce</option>
+          <option value="expo">Expo (snappy)</option>
+          <option value="circ">Circ</option>
+          <option value="sine">Sine (gentle)</option>
+          <option value="none">None (linear)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Duration</label>
+        <div class="slider-row">
+          <input type="range" id="pn-dur" min="100" max="2000" step="50" value="450" oninput="updateSliderVal(this,'pn-dur-val')" onchange="onCtrlChange()">
+          <span class="slider-val" id="pn-dur-val">0.45s</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Delay</label>
+        <div class="slider-row">
+          <input type="range" id="pn-delay" min="0" max="1500" step="50" value="0" oninput="updateSliderVal(this,'pn-delay-val')" onchange="onCtrlChange()">
+          <span class="slider-val" id="pn-delay-val">0.00s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSS spec accordion -->
+  <div class="el-card" id="card-css">
+    <div class="el-card-header" onclick="toggleCard('css')">
+      <div class="el-card-title">
+        <span class="el-dot" style="background:#aaa"></span>
+        CSS — last animation
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="el-card-body">
+      <div class="css-block-label">Avatar</div>
+      <div class="css-block" id="css-avatar"></div>
+      <div class="css-block-label">Notification</div>
+      <div class="css-block" id="css-notif"></div>
+      <div class="css-block-label">Panel</div>
+      <div class="css-block" id="css-panel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Avatar + notification dot -->
+<div class="avatar-wrap" id="avatarWrap" onclick="toggle()">
+  <svg class="avatar" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+      <!-- Clip the pupil to the (animated) white eyelid. <use> keeps the clip
+           in lockstep with #eyeLid's transform — one source of truth. -->
+      <clipPath id="eyeClip" clipPathUnits="userSpaceOnUse">
+        <use href="#eyeLid" xlink:href="#eyeLid"/>
+      </clipPath>
+    </defs>
+    <rect width="64" height="64" rx="32" fill="white"/>
+    <path d="M4 32C4 16.536 16.536 4 32 4V4C47.464 4 60 16.536 60 32V32C60 47.464 47.464 60 32 60V60C16.536 60 4 47.464 4 32V32Z" fill="#4BD675"/>
+    <!-- White eye socket / eyelid: the single element GSAP squashes to blink.
+         Drawn behind the pupil; as it closes, the clipped pupil closes with it. -->
+    <path id="eyeLid" d="M42.5607 45.0578C44.3384 45.0578 45.9986 44.0654 46.911 42.4172C48.5523 39.4528 49.5 35.9646 49.5 32.2272C49.5 21.4707 41.6647 12.7501 32 12.7501C22.3353 12.7501 14.5 21.4707 14.5 32.2272C14.5 35.9646 15.4477 39.4528 17.089 42.4172C18.0014 44.0654 19.6616 45.0578 21.4393 45.0578C21.4393 45.0578 27.8749 45.0578 32 45.0578C36.1251 45.0578 42.5654 45.0578 42.5654 45.0578H42.5607Z" fill="white"/>
+    <!-- Navy pupil: fixed; clipped to the (animated) white eyelid above. -->
+    <path id="avatarEye" clip-path="url(#eyeClip)" d="M38.8899 39.4732C40.0498 39.4732 41.1329 38.9096 41.7282 37.9735C42.799 36.2901 43.4173 34.3091 43.4173 32.1866C43.4173 26.078 38.3054 21.1256 31.9999 21.1256C25.6944 21.1256 20.5825 26.078 20.5825 32.1866C20.5825 34.3091 21.2008 36.2901 22.2717 37.9735C22.8669 38.9096 23.9501 39.4732 25.1099 39.4732C25.1099 39.4732 29.3028 38.9997 31.9999 38.9996C34.6969 38.9995 38.893 39.4732 38.893 39.4732H38.8899Z" fill="#0F2333"/>
+  </svg>
+  <svg class="notif-dot" id="notifDot" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1Z" fill="#B61200"/>
+    <path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1Z" stroke="white" stroke-width="2"/>
+  </svg>
+</div>
+
+<!-- Panel -->
+<div class="panel" id="panel">
+
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-header-left" id="headerLeft">
+      <!-- Default state: just the Winston title -->
+      <span class="panel-title" id="headerTitle">Winston</span>
+    </div>
+    <div class="panel-header-actions" id="headerActions">
+      <!-- 3-dot menu + dropdown -->
+      <div class="menu-anchor">
+        <div class="panel-icon-btn" id="menuBtn" onclick="toggleMenu(event)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+          </svg>
+        </div>
+        <div class="context-menu" id="contextMenu" role="menu">
+          <div class="context-menu-item" role="menuitem" onclick="menuAction('reset')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#383C38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/>
+            </svg>
+            Reset conversation
+          </div>
+          <div class="context-menu-item" role="menuitem" onclick="menuAction('history')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#383C38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/>
+            </svg>
+            Load chat history
+          </div>
+        </div>
+      </div>
+      <!-- Close -->
+      <div class="panel-icon-btn" onclick="toggle()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body wrapper holds both layers -->
+  <div class="panel-body-wrap">
+
+  <!-- Chat stream (default layer) -->
+  <div class="panel-body" id="panelMessages">
+
+    <!-- Companion card list (Figma: SPL Companion / card / list) -->
+    <div class="companion-card">
+
+      <!-- Header -->
+      <div class="cc-header">
+        <div class="cc-avatar">WS</div>
+        <div class="cc-header-main">
+          <div class="cc-title">A very long title indeed</div>
+          <div class="cc-subline">
+            <span class="cc-subtitle">Subtitle</span>
+            <span class="cc-badge cc-badge-grey">Badge</span>
+          </div>
+        </div>
+        <div class="cc-header-actions">
+          <button class="cc-contact-btn">
+            Contact
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M3 21v-1a6 6 0 0 1 6-6h2"/><path d="M19 14v6M22 17h-6"/>
+            </svg>
+          </button>
+          <span class="cc-secondary-text">Secondary text</span>
+        </div>
+      </div>
+
+      <!-- Rows -->
+      <div class="cc-rows">
+        <div class="cc-row">
+          <span class="cc-checkbox" role="checkbox" aria-checked="false"></span>
+          <div class="cc-row-main">
+            <div class="cc-row-top">
+              <span class="cc-name">Zackary Hale Has . along name</span>
+              <span class="cc-badge cc-badge-grey">Employee</span>
+            </div>
+            <div class="cc-address">Deåk Ferenc tér, Budapest, Hungary</div>
+          </div>
+          <span class="cc-match">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.1L19 8.2l-4.2 3.3 1.5 5.2L12 13.8 7.7 16.7l1.5-5.2L5 8.2l5.4-1.1L12 2z"/></svg>
+            2
+          </span>
+          <button class="cc-row-chevron" aria-label="Open">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="cc-row">
+          <span class="cc-checkbox" role="checkbox" aria-checked="false"></span>
+          <div class="cc-row-main">
+            <div class="cc-row-top">
+              <span class="cc-name">Zackary Hale Has . along name</span>
+              <span class="cc-badge cc-badge-grey">Employee</span>
+            </div>
+            <div class="cc-address">Deåk Ferenc tér, Budapest, Hungary</div>
+          </div>
+          <span class="cc-match">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.1L19 8.2l-4.2 3.3 1.5 5.2L12 13.8 7.7 16.7l1.5-5.2L5 8.2l5.4-1.1L12 2z"/></svg>
+            2
+          </span>
+          <button class="cc-row-chevron" aria-label="Open">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="cc-row">
+          <span class="cc-checkbox" role="checkbox" aria-checked="false"></span>
+          <div class="cc-row-main">
+            <div class="cc-row-top">
+              <span class="cc-name">Zackary Hale Has . along name</span>
+              <span class="cc-badge cc-badge-grey">Employee</span>
+            </div>
+            <div class="cc-address">Deåk Ferenc tér, Budapest, Hungary</div>
+          </div>
+          <span class="cc-match">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.1L19 8.2l-4.2 3.3 1.5 5.2L12 13.8 7.7 16.7l1.5-5.2L5 8.2l5.4-1.1L12 2z"/></svg>
+            2
+          </span>
+          <button class="cc-row-chevron" aria-label="Open">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="cc-footer">
+        <button class="cc-footer-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/>
+          </svg>
+          Schedule selected
+        </button>
+        <button class="cc-footer-btn" onclick="openJobList()">
+          More
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="suggestion-chip">user utterances</div>
+  </div><!-- /panel-body -->
+
+  <!-- Job List layer (slides in from right) -->
+  <div class="job-list-layer" id="jobListLayer">
+    <div class="job-list-scroll" id="jobListScroll">
+      <!-- Rows generated by JS -->
+    </div>
+    <div class="job-list-floating-actions">
+      <button class="job-list-action-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>
+        </svg>
+        Label
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <button class="job-list-action-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>
+        </svg>
+        Label
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Candidate application layer (slides in over job list) -->
+  <div class="candidate-app-layer" id="candidateAppLayer">
+    <div class="candidate-app-scroll" id="candidateAppScroll">
+      <div class="ca-card">
+
+        <div class="cc-header">
+          <div class="cc-avatar" id="caAvatar">WS</div>
+          <div class="cc-header-main">
+            <div class="cc-title" id="caTitle">A very long title indeed</div>
+            <div class="cc-subline">
+              <span class="cc-subtitle" id="caSubtitle">A very long subtitle indeed</span>
+              <span class="cc-badge cc-badge-grey">Employee</span>
+              <span class="cc-secondary-text">Secondary text</span>
+            </div>
+          </div>
+          <div class="cc-header-actions">
+            <button class="cc-contact-btn" type="button">
+              Contact
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M3 21v-1a6 6 0 0 1 6-6h2"/><path d="M19 14v6M22 17h-6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ca-tabs" role="tablist" aria-label="Application sections">
+          <button class="ca-tab active" type="button" role="tab" aria-selected="true">Overview</button>
+          <button class="ca-tab" type="button" role="tab" aria-selected="false">Screening</button>
+          <button class="ca-tab" type="button" role="tab" aria-selected="false">
+            Match
+            <span class="ca-tab-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.1L19 8.2l-4.2 3.3 1.5 5.2L12 13.8 7.7 16.7l1.5-5.2L5 8.2l5.4-1.1L12 2z"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="ca-controls">
+          <div class="ca-segment" role="group" aria-label="Profile view">
+            <button class="ca-segment-btn active" type="button">Profile</button>
+            <button class="ca-segment-btn" type="button">Resume</button>
+          </div>
+          <a class="ca-linkedin" href="#" onclick="return false;">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 4.126 0 2.063 2.063 0 0 1-2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </a>
+        </div>
+
+        <div class="ca-body">
+          <section class="ca-section">
+            <h2 class="ca-section-title">Experience</h2>
+            <article class="ca-entry">
+              <div class="ca-entry-date">Jan 2021 – Current (3 years)</div>
+              <div class="ca-entry-title">Courier</div>
+              <div class="ca-entry-sub">Sprint Excel</div>
+              <p class="ca-entry-desc">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                <button class="ca-show-more" type="button">Show more</button>
+              </p>
+            </article>
+            <article class="ca-entry">
+              <div class="ca-entry-date">Jan 2021 – Current (3 years)</div>
+              <div class="ca-entry-title">Courier</div>
+              <div class="ca-entry-sub">Sprint Excel</div>
+              <p class="ca-entry-desc">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                <button class="ca-show-more" type="button">Show more</button>
+              </p>
+            </article>
+          </section>
+
+          <section class="ca-section">
+            <h2 class="ca-section-title">Education</h2>
+            <article class="ca-entry">
+              <div class="ca-entry-date">Jan 2021 – Sep 2025 (3 years)</div>
+              <div class="ca-entry-title">Master of Science — Landscape Architecture</div>
+              <div class="ca-entry-sub">New York University</div>
+            </article>
+            <article class="ca-entry">
+              <div class="ca-entry-date">Jan 2021 – Sep 2025 (3 years)</div>
+              <div class="ca-entry-title">Master of Science — Landscape Architecture</div>
+              <div class="ca-entry-sub">New York University</div>
+            </article>
+          </section>
+        </div>
+
+        <div class="ca-footer">
+          <button class="ca-footer-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>
+            </svg>
+            Label
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+          <button class="ca-footer-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>
+            </svg>
+            Label
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /panel-body-wrap -->
+
+  <!-- Footer / input bar -->
+  <div class="panel-footer">
+    <div class="panel-input-row">
+      <input class="panel-input" type="text" placeholder="Message Winston...">
+      <button class="panel-send-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 2L11 13" stroke="#383C38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="#383C38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="panel-footer-caption">Winston uses AI, verify results.</div>
+  </div>
+
+</div>
+
+<!-- GSAP (vendored locally — see gsap.min.js) -->
+<script src="gsap.min.js"></script>
+<script>
+// ── GSAP-driven animation ──
+//
+// Geometry:
+//   • Avatar exits straight out to the right (x: +144) and fades.
+//   • Panel sits at right:40px; its hidden state is pushed off-screen
+//     (x: +500) and faded. Opening tweens it back to x:0.
+//   • Notification dot pops via scale.
+// Easing uses GSAP-native ease families, applied directionally (out on show,
+// in on hide) so motion accelerates away and settles on arrival.
+
+// Overshoot/oscillating eases look broken on the "hide" half, so each family
+// maps to sensible show/hide variants.
+const EASE = {
+  power2:  { show: 'power2.out',         hide: 'power2.in' },
+  power4:  { show: 'power4.out',         hide: 'power4.in' },
+  back:    { show: 'back.out(1.7)',      hide: 'back.in(1.7)' },
+  elastic: { show: 'elastic.out(1,0.5)', hide: 'power3.in' },
+  bounce:  { show: 'bounce.out',         hide: 'power2.in' },
+  expo:    { show: 'expo.out',           hide: 'expo.in' },
+  circ:    { show: 'circ.out',           hide: 'circ.in' },
+  sine:    { show: 'sine.out',           hide: 'sine.in' },
+  none:    { show: 'none',               hide: 'none' },
+};
+
+function easeFor(variant, dir) {
+  const e = EASE[variant] || EASE.power2;
+  return dir === 'show' ? e.show : e.hide;
+}
+
+// Geometry constants
+const PANEL_HIDE_X    = 500;  // push fully past its right:40px anchor + shadow
+const AVATAR_EXIT_X   = 144;  // 64px avatar + 40px inset + clearance
+const JOB_LIST_SLIDE  = 420;  // job list layer slide distance = panel width
+const CANDIDATE_SLIDE = 420;  // candidate layer slide distance = panel width
+
+// DOM refs
+const avatarEl  = document.getElementById('avatarWrap');
+const notifEl   = document.getElementById('notifDot');
+const panelEl   = document.getElementById('panel');
+const toggleBtn = document.getElementById('toggleBtn');
+
+let isOpen = false;
+let animating = false;
+let notifVisible = false;
+
+// ── Eye blink (eyelid close) ──
+// On hover the white eye socket (#eyeLid) squashes vertically — the eyelid
+// closing. The navy pupil stays fixed but is clipped to that same shape (via a
+// <use> in #eyeClip), so it shrinks to a slit and vanishes as the lid shuts,
+// then reappears as it opens.
+const eyeLidEl = document.getElementById('eyeLid');
+
+// One paused, reusable timeline. svgOrigin pins the squash to the white
+// socket's own centre in SVG user units (bbox centre = x32 / y28.9) so the lid
+// closes symmetrically. The tiny rotation:0.01 forces Chrome to repaint the
+// dependent clip region each frame. overwrite:'auto' + the onComplete reset
+// guarantee the lid can never strand half-closed.
+const blinkTl = gsap.timeline({
+  paused: true,
+  onComplete() { gsap.set(eyeLidEl, { scaleY: 1, rotation: 0 }); },
+})
+.to(eyeLidEl, {
+  scaleY: 0.05,            // thin slit (not 0 — avoids anti-alias flicker)
+  rotation: 0.01,          // Chrome clip-region repaint nudge
+  duration: 0.15,          // close, lid comes down
+  ease: 'power2.in',
+  svgOrigin: '32 28.9',
+  overwrite: 'auto',
+})
+.to(eyeLidEl, {
+  scaleY: 1,               // reopen, slightly slower = natural
+  rotation: 0.01,
+  duration: 0.28,
+  ease: 'power2.out',
+  svgOrigin: '32 28.9',
+  overwrite: 'auto',
+});
+
+function blink() {
+  // Don't blink while the avatar is hidden behind the open panel or mid
+  // open/close transition (isOpen/animating are set synchronously in toggle()).
+  if (isOpen || animating) return;
+  // restart() rewinds the shared timeline to frame 0 (eye fully open) and
+  // replays, so rapid/overlapping hovers can never stack tweens.
+  blinkTl.restart(true);
+}
+
+// ── Helpers ──
+function ms(elId)  { return parseInt(document.getElementById(elId).value); }
+function sec(elId) { return ms(elId) / 1000; }
+function s(msVal)  { return (msVal / 1000).toFixed(2) + 's'; }
+
+function updateSliderVal(input, valId) {
+  document.getElementById(valId).textContent = s(parseInt(input.value));
+}
+
+function toggleCard(name) {
+  document.getElementById('card-' + name).classList.toggle('open');
+}
+
+// GSAP holds end states, so reversing never snaps the element to a base
+// position — this removes the double-flash the CSS version had.
+function setInitialStates() {
+  gsap.set(panelEl,      { x: PANEL_HIDE_X, autoAlpha: 0 });
+  gsap.set(avatarEl,     { x: 0, autoAlpha: 1 });
+  gsap.set(notifEl,      { scale: 0, autoAlpha: 0, transformOrigin: '50% 50%' });
+  gsap.set(jobListLayer, { x: JOB_LIST_SLIDE });
+  gsap.set(candidateAppLayer, { x: CANDIDATE_SLIDE });
+}
+
+// ── Toggle (open / close) ──
+function toggle() {
+  if (animating) return;
+  animating = true;
+
+  const avV = document.getElementById('av-variant').value;
+  const ntV = document.getElementById('nt-variant').value;
+  const pnV = document.getElementById('pn-variant').value;
+
+  const avDur = sec('av-dur'), avDelay = sec('av-delay');
+  const ntDur = sec('nt-dur'), ntDelay = sec('nt-delay');
+  const pnDur = sec('pn-dur'), pnDelay = sec('pn-delay');
+
+  const tl = gsap.timeline({ onComplete: () => { animating = false; } });
+
+  if (!isOpen) {
+    // OPEN: avatar slides out right (no fade — mirrors the slide-in), panel
+    // slides in, notif (if shown) pops away. Avatar passes UNDER the panel.
+    gsap.set(avatarEl, { zIndex: 500 }); // panel is 501
+    tl.to(avatarEl, {
+      x: AVATAR_EXIT_X,
+      duration: avDur, delay: avDelay, ease: easeFor(avV, 'hide'),
+    }, 0);
+
+    if (notifVisible) {
+      tl.to(notifEl, {
+        scale: 0, autoAlpha: 0,
+        duration: ntDur, delay: ntDelay, ease: easeFor(ntV, 'hide'),
+      }, 0);
+      notifVisible = false;
+      const nb = document.getElementById('notifToggleBtn');
+      nb.textContent = 'Show'; nb.classList.remove('visible');
+      document.getElementById('notif-status-label').textContent = 'Off';
+    }
+
+    // Panel is solid the instant it starts moving (snap opaque/visible, then
+    // slide) so the avatar passing under it is cleanly hidden rather than
+    // showing through a fading-in translucent panel.
+    gsap.set(panelEl, { autoAlpha: 1 });
+    tl.to(panelEl, {
+      x: 0,
+      duration: pnDur, delay: pnDelay, ease: easeFor(pnV, 'show'),
+    }, 0);
+
+    toggleBtn.textContent = 'Close panel';
+    toggleBtn.classList.add('is-open');
+    isOpen = true;
+  } else {
+    // CLOSE: panel slides out, avatar returns. Notif stays hidden.
+    // Avatar slides in OVER the departing panel.
+    gsap.set(avatarEl, { zIndex: 502 }); // panel is 501
+    // Slide the panel out as a solid surface (no fade), then hide it at the end
+    // so it stays out of hit-testing while parked off-screen.
+    tl.to(panelEl, {
+      x: PANEL_HIDE_X,
+      duration: pnDur, delay: pnDelay, ease: easeFor(pnV, 'hide'),
+      onComplete() { gsap.set(panelEl, { autoAlpha: 0 }); },
+    }, 0);
+
+    tl.to(avatarEl, {
+      x: 0, autoAlpha: 1,
+      duration: avDur, delay: avDelay, ease: easeFor(avV, 'show'),
+    }, 0);
+
+    toggleBtn.textContent = 'Open panel';
+    toggleBtn.classList.remove('is-open');
+    isOpen = false;
+    closeMenu();
+    if (candidateAppOpen) closeCandidateApp(true);
+    if (jobListOpen) {
+      jobListOpen = false;
+      gsap.set(jobListLayer, { x: JOB_LIST_SLIDE });
+      resetPanelHeader();
+    }
+  }
+
+  updateCode();
+}
+
+// ── Context menu (3-dot dropdown) ──
+let menuOpen = false;
+const menuEl = document.getElementById('contextMenu');
+const menuBtn = document.getElementById('menuBtn');
+
+function openMenu() {
+  menuOpen = true;
+  menuBtn.classList.add('active');
+  gsap.fromTo(menuEl,
+    { autoAlpha: 0, y: -6, scale: 0.96 },
+    { autoAlpha: 1, y: 0, scale: 1, duration: 0.18, ease: 'power2.out' }
+  );
+}
+
+function closeMenu() {
+  if (!menuOpen) return;
+  menuOpen = false;
+  menuBtn.classList.remove('active');
+  gsap.to(menuEl, { autoAlpha: 0, y: -6, scale: 0.96, duration: 0.12, ease: 'power2.in' });
+}
+
+function toggleMenu(e) {
+  if (e) e.stopPropagation();
+  menuOpen ? closeMenu() : openMenu();
+}
+
+function menuAction(which) {
+  // Demo stubs — wire to real behaviour as needed.
+  if (which === 'reset')   console.log('Context menu: Reset conversation');
+  if (which === 'history') console.log('Context menu: Load chat history');
+  closeMenu();
+}
+
+// Dismiss on outside click or Escape.
+document.addEventListener('click', (e) => {
+  if (menuOpen && !e.target.closest('.menu-anchor')) closeMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeMenu();
+});
+
+// ── Notification independent trigger ──
+function triggerNotif() {
+  const ntV   = document.getElementById('nt-variant').value;
+  const ntDur = sec('nt-dur'), ntDelay = sec('nt-delay');
+  const btn   = document.getElementById('notifToggleBtn');
+  const lbl   = document.getElementById('notif-status-label');
+
+  if (!notifVisible) {
+    gsap.to(notifEl, {
+      scale: 1, autoAlpha: 1,
+      duration: ntDur, delay: ntDelay, ease: easeFor(ntV, 'show'),
+    });
+    notifVisible = true;
+    btn.textContent = 'Hide'; btn.classList.add('visible');
+    lbl.textContent = 'On';
+  } else {
+    gsap.to(notifEl, {
+      scale: 0, autoAlpha: 0,
+      duration: ntDur, delay: ntDelay, ease: easeFor(ntV, 'hide'),
+    });
+    notifVisible = false;
+    btn.textContent = 'Show'; btn.classList.remove('visible');
+    lbl.textContent = 'Off';
+  }
+  updateCode();
+}
+
+// ── GSAP code spec display ──
+function tweenSnippet(target, props, dur, ease, delay) {
+  const parts = Object.entries(props).map(([k, v]) => `${k}: ${v}`);
+  parts.push(`duration: ${dur.toFixed(2)}`);
+  if (delay > 0) parts.push(`delay: ${delay.toFixed(2)}`);
+  parts.push(`ease: "${ease}"`);
+  return `gsap.to("${target}", {\n  ${parts.join(',\n  ')}\n});`;
+}
+
+function updateCode() {
+  const avV = document.getElementById('av-variant').value;
+  const ntV = document.getElementById('nt-variant').value;
+  const pnV = document.getElementById('pn-variant').value;
+  const avDur = sec('av-dur'), avDelay = sec('av-delay');
+  const ntDur = sec('nt-dur'), ntDelay = sec('nt-delay');
+  const pnDur = sec('pn-dur'), pnDelay = sec('pn-delay');
+
+  // Each snippet shows the tween for that element's NEXT action.
+  const avProps = isOpen ? { x: 0, autoAlpha: 1 } : { x: AVATAR_EXIT_X, autoAlpha: 0 };
+  const avEase  = isOpen ? easeFor(avV, 'show') : easeFor(avV, 'hide');
+
+  const pnProps = isOpen ? { x: PANEL_HIDE_X, autoAlpha: 0 } : { x: 0, autoAlpha: 1 };
+  const pnEase  = isOpen ? easeFor(pnV, 'hide') : easeFor(pnV, 'show');
+
+  const ntProps = notifVisible ? { scale: 0, autoAlpha: 0 } : { scale: 1, autoAlpha: 1 };
+  const ntEase  = notifVisible ? easeFor(ntV, 'hide') : easeFor(ntV, 'show');
+
+  document.getElementById('css-avatar').textContent =
+    tweenSnippet('.avatar-wrap', avProps, avDur, avEase, avDelay);
+  document.getElementById('css-notif').textContent =
+    tweenSnippet('.notif-dot', ntProps, ntDur, ntEase, ntDelay);
+  document.getElementById('css-panel').textContent =
+    tweenSnippet('.panel', pnProps, pnDur, pnEase, pnDelay);
+}
+
+// ── URL sync ──
+function syncUrl() {
+  const p = new URLSearchParams({
+    avV: document.getElementById('av-variant').value,
+    avD: ms('av-dur'), avDel: ms('av-delay'),
+    ntV: document.getElementById('nt-variant').value,
+    ntD: ms('nt-dur'), ntDel: ms('nt-delay'),
+    pnV: document.getElementById('pn-variant').value,
+    pnD: ms('pn-dur'), pnDel: ms('pn-delay'),
+  });
+  history.replaceState(null, '', '?' + p.toString());
+}
+
+function onCtrlChange() { syncUrl(); updateCode(); }
+
+function restoreFromUrl() {
+  const p = new URLSearchParams(location.search);
+  function set(id, key) { if (p.has(key)) document.getElementById(id).value = p.get(key); }
+  function setSlider(id, valId, key) {
+    if (!p.has(key)) return;
+    document.getElementById(id).value = p.get(key);
+    document.getElementById(valId).textContent = s(parseInt(p.get(key)));
+  }
+  set('av-variant','avV'); setSlider('av-dur','av-dur-val','avD'); setSlider('av-delay','av-delay-val','avDel');
+  set('nt-variant','ntV'); setSlider('nt-dur','nt-dur-val','ntD'); setSlider('nt-delay','nt-delay-val','ntDel');
+  set('pn-variant','pnV'); setSlider('pn-dur','pn-dur-val','pnD'); setSlider('pn-delay','pn-delay-val','pnDel');
+}
+
+// ── Job List layer ──
+const jobListLayer       = document.getElementById('jobListLayer');
+const jobListScroll      = document.getElementById('jobListScroll');
+const candidateAppLayer  = document.getElementById('candidateAppLayer');
+const candidateAppScroll = document.getElementById('candidateAppScroll');
+const headerLeft           = document.getElementById('headerLeft');
+const headerTitle          = document.getElementById('headerTitle');
+const headerActions        = document.getElementById('headerActions');
+
+let jobListOpen = false;
+let candidateAppOpen = false;
+let selectedCandidateName = '';
+
+const backBtnSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>`;
+
+function candidateInitials(name) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function setPanelHeaderBack(onClick, title) {
+  headerLeft.innerHTML = `
+    <button class="panel-header-back" id="backBtn" onclick="${onClick}()" aria-label="Back">
+      ${backBtnSvg}
+    </button>
+    <span class="panel-title">${title}</span>
+  `;
+}
+
+function resetPanelHeader() {
+  headerLeft.innerHTML = `<span class="panel-title" id="headerTitle">Winston</span>`;
+}
+
+function populateCandidateLayer(name) {
+  selectedCandidateName = name;
+  document.getElementById('caTitle').textContent = name;
+  document.getElementById('caSubtitle').textContent = 'A very long subtitle indeed';
+  document.getElementById('caAvatar').textContent = candidateInitials(name);
+  candidateAppScroll.scrollTop = 0;
+}
+
+// Build the list rows once
+(function buildJobList() {
+  const names = [
+    'Zackary Hale Has . along name',
+    'Margaret Chen Fitzgerald',
+    'Oliver Blackwood-Smith',
+    'Priya Nair Raghunathan',
+    'Thomas Johanssen Berg',
+    'Ayasha Running Bear',
+    'Leonardo Da Costa Filho',
+    'Sofía Martínez-Vega',
+    'William O\'Brien McCarthy',
+    'Elena Petrov Kuznetsov',
+    'Amara Okonkwo-Diallo',
+    'Hiro Tanaka Watanabe',
+    'Fatima Al-Rashid Hassan',
+    'Björn Lindqvist Holm',
+    'Chidinma Eze Okafor',
+    'Yuki Nakamura Sato',
+    'Rafael Torres Delgado',
+    'Ingrid Svensson Larsen',
+    'Kwame Asante Mensah',
+    'Valentina Rossi Ferrari',
+  ];
+
+  const chevronSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M9 6l6 6-6 6"/></svg>`;
+  const starSvg = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><path d="M12 2l1.6 5.1L19 8.2l-4.2 3.3 1.5 5.2L12 13.8 7.7 16.7l1.5-5.2L5 8.2l5.4-1.1L12 2z"/></svg>`;
+
+  const html = names.map(name => `
+    <div class="job-list-row">
+      <span class="cc-checkbox" role="checkbox" aria-checked="false"></span>
+      <div class="cc-row-main">
+        <div class="cc-row-top">
+          <span class="cc-name">${name}</span>
+          <span class="cc-badge cc-badge-grey">Employee</span>
+        </div>
+        <div class="cc-address">Deåk Ferenc tér, Budapest, Hungary</div>
+      </div>
+      <span class="cc-match">${starSvg} 2</span>
+      <button class="cc-row-chevron" aria-label="Open">${chevronSvg}</button>
+    </div>
+  `).join('');
+
+  jobListScroll.innerHTML = html;
+
+  jobListScroll.addEventListener('click', e => {
+    const cb = e.target.closest('.cc-checkbox');
+    if (cb) {
+      const checked = cb.getAttribute('aria-checked') === 'true';
+      cb.setAttribute('aria-checked', String(!checked));
+      return;
+    }
+
+    const row = e.target.closest('.job-list-row');
+    if (!row) return;
+    const nameEl = row.querySelector('.cc-name');
+    if (nameEl) openCandidateApp(nameEl.textContent);
+  });
+})();
+
+function openJobList() {
+  if (jobListOpen) return;
+  if (candidateAppOpen) closeCandidateApp(true);
+  jobListOpen = true;
+
+  setPanelHeaderBack('closeJobList', 'Job List');
+
+  gsap.killTweensOf(jobListLayer);
+  gsap.set(jobListLayer, { x: JOB_LIST_SLIDE });
+  gsap.to(jobListLayer, { x: 0, duration: 0.35, ease: 'power2.out' });
+}
+
+function closeJobList() {
+  if (!jobListOpen) return;
+  if (candidateAppOpen) closeCandidateApp(true);
+  jobListOpen = false;
+
+  gsap.killTweensOf(jobListLayer);
+  gsap.to(jobListLayer, {
+    x: JOB_LIST_SLIDE,
+    duration: 0.3,
+    ease: 'power2.in',
+    onComplete() {
+      resetPanelHeader();
+    }
+  });
+}
+
+function openCandidateApp(name) {
+  if (!jobListOpen || candidateAppOpen) return;
+  candidateAppOpen = true;
+
+  populateCandidateLayer(name);
+  setPanelHeaderBack('closeCandidateApp', 'Candidate application');
+
+  gsap.killTweensOf(candidateAppLayer);
+  gsap.set(candidateAppLayer, { x: CANDIDATE_SLIDE });
+  gsap.to(candidateAppLayer, { x: 0, duration: 0.35, ease: 'power2.out' });
+}
+
+function closeCandidateApp(instant) {
+  if (!candidateAppOpen) return;
+  candidateAppOpen = false;
+
+  gsap.killTweensOf(candidateAppLayer);
+  if (instant) {
+    gsap.set(candidateAppLayer, { x: CANDIDATE_SLIDE });
+    if (jobListOpen) setPanelHeaderBack('closeJobList', 'Job List');
+    return;
+  }
+
+  gsap.to(candidateAppLayer, {
+    x: CANDIDATE_SLIDE,
+    duration: 0.3,
+    ease: 'power2.in',
+    onComplete() {
+      if (jobListOpen) setPanelHeaderBack('closeJobList', 'Job List');
+    }
+  });
+}
+
+// Profile / Resume segment toggle
+candidateAppLayer.addEventListener('click', e => {
+  const segBtn = e.target.closest('.ca-segment-btn');
+  if (!segBtn) return;
+  segBtn.parentElement.querySelectorAll('.ca-segment-btn').forEach(btn => {
+    btn.classList.toggle('active', btn === segBtn);
+  });
+});
+
+// ── Init ──
+restoreFromUrl();
+setInitialStates();
+updateCode();
+
+// Blink the eye once whenever the pointer enters the avatar. mouseenter (not
+// mouseover) fires once per entry and doesn't bubble from inner SVG sub-paths.
+avatarEl.addEventListener('mouseenter', blink);
+</script>
+</body>
+</html>
