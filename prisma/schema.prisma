@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model JobPosting {
+  id            String         @id @default(cuid())
+  title         String
+  subtitle      String
+  badge         String
+  secondaryText String
+  candidates    JobCandidate[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Candidate {
+  id         String                @id @default(cuid())
+  name       String
+  address    String
+  badgeType  String
+  matchScore Int
+  subtitle   String?
+  jobs       JobCandidate[]
+  experience CandidateExperience[]
+  education  CandidateEducation[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
+
+model JobCandidate {
+  jobId       String
+  candidateId String
+  selected    Boolean    @default(false)
+  job         JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate   Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, candidateId])
+  @@index([jobId])
+  @@index([candidateId])
+}
+
+model CandidateExperience {
+  id          String    @id @default(cuid())
+  candidateId String
+  dateRange   String
+  title       String
+  company     String
+  description String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([candidateId])
+}
+
+model CandidateEducation {
+  id          String    @id @default(cuid())
+  candidateId String
+  dateRange   String
+  degree      String
+  school      String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([candidateId])
+}
