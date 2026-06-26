@@ -11,7 +11,7 @@ const backBtnSvg = (
 
 const TITLES = {
   default: "Winston",
-  jobList: "Job List",
+  jobList: "Applicant List",
   candidate: "Candidate application",
 } as const;
 

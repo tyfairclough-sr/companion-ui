@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AnimationSettings,
@@ -10,9 +10,14 @@ import {
   easeFor,
   AVATAR_EXIT_X,
   PANEL_HIDE_X,
+  loadStoredDefaults,
+  saveStoredDefaults,
 } from "@/lib/animation";
 
-function parseSettings(searchParams: URLSearchParams): AnimationSettings {
+function parseSettings(
+  searchParams: URLSearchParams,
+  defaults: AnimationSettings
+): AnimationSettings {
   const num = (key: string, fallback: number) => {
     const v = searchParams.get(key);
     return v ? parseInt(v, 10) : fallback;
@@ -20,15 +25,15 @@ function parseSettings(searchParams: URLSearchParams): AnimationSettings {
   const str = (key: string, fallback: string) => searchParams.get(key) ?? fallback;
 
   return {
-    avV: str("avV", DEFAULT_ANIMATION_SETTINGS.avV),
-    avD: num("avD", DEFAULT_ANIMATION_SETTINGS.avD),
-    avDel: num("avDel", DEFAULT_ANIMATION_SETTINGS.avDel),
-    ntV: str("ntV", DEFAULT_ANIMATION_SETTINGS.ntV),
-    ntD: num("ntD", DEFAULT_ANIMATION_SETTINGS.ntD),
-    ntDel: num("ntDel", DEFAULT_ANIMATION_SETTINGS.ntDel),
-    pnV: str("pnV", DEFAULT_ANIMATION_SETTINGS.pnV),
-    pnD: num("pnD", DEFAULT_ANIMATION_SETTINGS.pnD),
-    pnDel: num("pnDel", DEFAULT_ANIMATION_SETTINGS.pnDel),
+    avV: str("avV", defaults.avV),
+    avD: num("avD", defaults.avD),
+    avDel: num("avDel", defaults.avDel),
+    ntV: str("ntV", defaults.ntV),
+    ntD: num("ntD", defaults.ntD),
+    ntDel: num("ntDel", defaults.ntDel),
+    pnV: str("pnV", defaults.pnV),
+    pnD: num("pnD", defaults.pnD),
+    pnDel: num("pnDel", defaults.pnDel),
   };
 }
 
@@ -65,7 +70,25 @@ export function useAnimationSettings(isOpen: boolean, notifVisible: boolean) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const settings = useMemo(() => parseSettings(searchParams), [searchParams]);
+  // Defaults loaded from localStorage; start with built-ins so the first
+  // (server-matching) render is stable, then hydrate from storage on mount.
+  const [storedDefaults, setStoredDefaults] = useState<AnimationSettings>(
+    DEFAULT_ANIMATION_SETTINGS
+  );
+
+  useEffect(() => {
+    setStoredDefaults(loadStoredDefaults());
+  }, []);
+
+  const settings = useMemo(
+    () => parseSettings(searchParams, storedDefaults),
+    [searchParams, storedDefaults]
+  );
+
+  const saveAsDefault = useCallback(() => {
+    saveStoredDefaults(settings);
+    setStoredDefaults(settings);
+  }, [settings]);
 
   const updateSettings = useCallback(
     (patch: Partial<AnimationSettings>) => {
@@ -91,7 +114,7 @@ export function useAnimationSettings(isOpen: boolean, notifVisible: boolean) {
     [isOpen, notifVisible, settings]
   );
 
-  return { settings, updateSettings, formatDuration, codeSnippets };
+  return { settings, updateSettings, saveAsDefault, formatDuration, codeSnippets };
 }
 
 export function useAccordionCards() {

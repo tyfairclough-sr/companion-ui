@@ -58,6 +58,32 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   pnDel: 0,
 };
 
+const DEFAULT_SETTINGS_STORAGE_KEY = "winston-animation-defaults";
+
+// User-saved defaults persist in localStorage so they survive reloads/app runs.
+// Falls back to the built-in defaults when nothing is stored or storage is
+// unavailable (e.g. during server-side rendering).
+export function loadStoredDefaults(): AnimationSettings {
+  if (typeof window === "undefined") return DEFAULT_ANIMATION_SETTINGS;
+  try {
+    const raw = window.localStorage.getItem(DEFAULT_SETTINGS_STORAGE_KEY);
+    if (!raw) return DEFAULT_ANIMATION_SETTINGS;
+    const parsed = JSON.parse(raw) as Partial<AnimationSettings>;
+    return { ...DEFAULT_ANIMATION_SETTINGS, ...parsed };
+  } catch {
+    return DEFAULT_ANIMATION_SETTINGS;
+  }
+}
+
+export function saveStoredDefaults(settings: AnimationSettings): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DEFAULT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore write failures (e.g. storage disabled or quota exceeded).
+  }
+}
+
 export function tweenSnippet(
   target: string,
   props: Record<string, string | number>,

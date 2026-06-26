@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { AnimationSettings } from "@/lib/animation";
 import { useAccordionCards } from "@/hooks/useAnimationSettings";
 
@@ -24,6 +24,7 @@ interface AnimationTesterProps {
   onTogglePanel: () => void;
   onTriggerNotif: () => void;
   onSettingsChange: (patch: Partial<AnimationSettings>) => void;
+  onSaveDefault: () => void;
   formatDuration: (ms: number) => string;
 }
 
@@ -37,11 +38,24 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
       onTogglePanel,
       onTriggerNotif,
       onSettingsChange,
+      onSaveDefault,
       formatDuration,
     },
     ref
   ) {
     const { openCards, toggleCard } = useAccordionCards();
+    const [savedConfirm, setSavedConfirm] = useState(false);
+
+    useEffect(() => {
+      if (!savedConfirm) return;
+      const t = setTimeout(() => setSavedConfirm(false), 1800);
+      return () => clearTimeout(t);
+    }, [savedConfirm]);
+
+    const handleSaveDefault = () => {
+      onSaveDefault();
+      setSavedConfirm(true);
+    };
 
     const slider = (
       key: keyof AnimationSettings,
@@ -176,6 +190,14 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
             <div className="css-block">{codeSnippets.panel}</div>
           </>
         )}
+
+        <button
+          className={`save-default-btn${savedConfirm ? " is-saved" : ""}`}
+          type="button"
+          onClick={handleSaveDefault}
+        >
+          {savedConfirm ? "Saved as default ✓" : "Save as default"}
+        </button>
       </div>
     );
   }

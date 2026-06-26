@@ -60,7 +60,7 @@ export function CandidateRow({
       <div className="cc-row-main">
         <div className="cc-row-top">
           <span className="cc-name">{candidate.name}</span>
-          {candidate.badgeType && (
+          {candidate.badgeType && candidate.badgeType !== "Employee" && (
             <span
               className={`cc-badge ${
                 candidate.badgeType === "Referral" ? "cc-badge-green" : "cc-badge-grey"

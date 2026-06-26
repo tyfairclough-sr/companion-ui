@@ -355,6 +355,27 @@ body {
 .toggle-btn:hover { opacity: 0.85; }
 .toggle-btn.is-open { background: #4BD675; color: #0F2333; }
 
+/* ── Save as default ── */
+.save-default-btn {
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #d0d0d0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f6f8fa;
+  color: #111;
+  margin-top: 12px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, opacity 0.15s;
+}
+.save-default-btn:hover { opacity: 0.85; }
+.save-default-btn.is-saved {
+  background: #4BD675;
+  border-color: #4BD675;
+  color: #0F2333;
+}
+
 /* ── CSS spec blocks (inside accordion) ── */
 .css-block-label {
   font-size: 11px;
@@ -544,6 +565,18 @@ body {
   padding: 16px;
 }
 
+/* ── Chat bubble entrance (fade + scale up) ── */
+@keyframes chat-bubble-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ── Suggestion chip (dark navy user-utterance pill) ── */
 .suggestion-chip {
   align-self: flex-end;
@@ -552,10 +585,12 @@ body {
   font-size: 14px;
   line-height: 1.4;
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: 16px 0px 16px 16px;
   max-width: 90%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  transform-origin: bottom right;
+  animation: chat-bubble-in 200ms ease-out;
 }
 
 /* ── AI reply (Winston assistant chat bubble) ── */
@@ -565,6 +600,8 @@ body {
   align-items: flex-start;
   gap: 8px;
   max-width: 90%;
+  transform-origin: bottom left;
+  animation: chat-bubble-in 200ms ease-out;
 }
 .ai-reply-bubble {
   background: #EFF3EF;

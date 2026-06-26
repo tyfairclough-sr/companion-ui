@@ -74,7 +74,8 @@ export function WinstonScene() {
     []
   );
 
-  const { settings, updateSettings, formatDuration } = useAnimationSettings(false, false);
+  const { settings, updateSettings, saveAsDefault, formatDuration } =
+    useAnimationSettings(false, false);
 
   const animations = usePanelAnimations(animationRefs, settings, () => {
     setSelectedCandidate(null);
@@ -149,6 +150,7 @@ export function WinstonScene() {
         onTogglePanel={animations.toggle}
         onTriggerNotif={animations.triggerNotif}
         onSettingsChange={updateSettings}
+        onSaveDefault={saveAsDefault}
         formatDuration={formatDuration}
       />
 
