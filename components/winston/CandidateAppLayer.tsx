@@ -3,20 +3,33 @@
 import { forwardRef, useState } from "react";
 import { CandidateDetailResponse } from "@/lib/types";
 import { candidateInitials } from "@/lib/animation";
+import { useSkeletonReveal } from "@/hooks/useSkeletonReveal";
+import { CandidateAppSkeleton } from "./skeletons/LayerSkeletons";
 
 interface CandidateAppLayerProps {
   candidate: CandidateDetailResponse | null;
+  isOpen: boolean;
 }
 
 export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerProps>(
-  function CandidateAppLayer({ candidate }, ref) {
+  function CandidateAppLayer({ candidate, isOpen }, ref) {
     const [profileView, setProfileView] = useState<"Profile" | "Resume">("Profile");
+    const isLoading = useSkeletonReveal({
+      enabled: isOpen,
+      ready: !!candidate,
+      resetKey: candidate?.id ?? null,
+    });
 
-    if (!candidate) return <div className="candidate-app-layer" ref={ref} />;
+    if (!candidate && !isOpen) {
+      return <div className="candidate-app-layer" ref={ref} />;
+    }
 
     return (
       <div className="candidate-app-layer" ref={ref}>
         <div className="candidate-app-scroll">
+          {isLoading ? (
+            <CandidateAppSkeleton />
+          ) : candidate ? (
           <div className="ca-card">
             <div className="cc-header">
               <div className="cc-avatar">{candidateInitials(candidate.name)}</div>
@@ -137,6 +150,7 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
               </button>
             </div>
           </div>
+          ) : null}
         </div>
       </div>
     );

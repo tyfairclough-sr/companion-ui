@@ -5,9 +5,10 @@ interface CompanionCardProps {
   job: JobPostingResponse;
   onToggleSelect: (id: string, selected: boolean) => void;
   onOpenMore: () => void;
+  onOpenCandidate: (id: string) => void;
 }
 
-export function CompanionCard({ job, onToggleSelect, onOpenMore }: CompanionCardProps) {
+export function CompanionCard({ job, onToggleSelect, onOpenMore, onOpenCandidate }: CompanionCardProps) {
   return (
     <div className="companion-card">
       <div className="cc-header">
@@ -45,6 +46,7 @@ export function CompanionCard({ job, onToggleSelect, onOpenMore }: CompanionCard
             key={candidate.id}
             candidate={candidate}
             onToggleSelect={onToggleSelect}
+            onOpen={onOpenCandidate}
           />
         ))}
       </div>

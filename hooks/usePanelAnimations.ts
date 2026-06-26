@@ -260,19 +260,19 @@ export function usePanelAnimations(
     }
 
     setJobListOpen(false);
+    setHeaderMode("default");
 
     gsap.killTweensOf(jobListLayerRef.current);
     gsap.to(jobListLayerRef.current, {
       x: JOB_LIST_SLIDE,
       duration: 0.3,
       ease: "power2.in",
-      onComplete: () => setHeaderMode("default"),
     });
   }, [candidateAppOpen, jobListOpen, refs]);
 
   const openCandidateApp = useCallback(() => {
-    const { jobListLayerRef, candidateAppLayerRef } = refs;
-    if (!jobListOpen || candidateAppOpen || !candidateAppLayerRef.current) return;
+    const { candidateAppLayerRef } = refs;
+    if (candidateAppOpen || !candidateAppLayerRef.current) return;
 
     setCandidateAppOpen(true);
     setHeaderMode("candidate");
@@ -280,7 +280,7 @@ export function usePanelAnimations(
     gsap.killTweensOf(candidateAppLayerRef.current);
     gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
     gsap.to(candidateAppLayerRef.current, { x: 0, duration: 0.35, ease: "power2.out" });
-  }, [candidateAppOpen, jobListOpen, refs]);
+  }, [candidateAppOpen, refs]);
 
   const closeCandidateApp = useCallback(
     (instant = false) => {
@@ -288,11 +288,11 @@ export function usePanelAnimations(
       if (!candidateAppOpen || !candidateAppLayerRef.current) return;
 
       setCandidateAppOpen(false);
+      setHeaderMode(jobListOpen ? "jobList" : "default");
 
       gsap.killTweensOf(candidateAppLayerRef.current);
       if (instant) {
         gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
-        if (jobListOpen) setHeaderMode("jobList");
         return;
       }
 
@@ -300,9 +300,6 @@ export function usePanelAnimations(
         x: CANDIDATE_SLIDE,
         duration: 0.3,
         ease: "power2.in",
-        onComplete: () => {
-          if (jobListOpen) setHeaderMode("jobList");
-        },
       });
     },
     [candidateAppOpen, jobListOpen, refs]
