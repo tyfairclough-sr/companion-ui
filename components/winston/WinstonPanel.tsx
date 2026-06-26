@@ -2,20 +2,20 @@
 
 import { forwardRef } from "react";
 import { JobPostingResponse, CandidateDetailResponse, JobPostingCandidate } from "@/lib/types";
+import { useSkeletonReveal } from "@/hooks/useSkeletonReveal";
 import { CompanionCard } from "./CompanionCard";
+import { QuickReplies } from "./QuickReplies";
 import { JobListLayer } from "./JobListLayer";
 import { CandidateAppLayer } from "./CandidateAppLayer";
-
-const backBtnSvg = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M19 12H5M12 5l-7 7 7 7" />
-  </svg>
-);
+import { PanelHeader } from "./PanelHeader";
+import { CompanionCardSkeleton, SuggestionChipSkeleton, QuickRepliesSkeleton } from "./skeletons/LayerSkeletons";
 
 interface WinstonPanelProps {
   job: JobPostingResponse | null;
   allCandidates: JobPostingCandidate[];
   selectedCandidate: CandidateDetailResponse | null;
+  jobListOpen: boolean;
+  candidateAppOpen: boolean;
   headerMode: "default" | "jobList" | "candidate";
   onToggle: () => void;
   onToggleMenu: (e?: React.MouseEvent) => void;
@@ -37,6 +37,8 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       job,
       allCandidates,
       selectedCandidate,
+      jobListOpen,
+      candidateAppOpen,
       headerMode,
       onToggle,
       onToggleMenu,
@@ -53,110 +55,54 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     },
     ref
   ) {
-    const headerTitle =
-      headerMode === "jobList"
-        ? "Job List"
-        : headerMode === "candidate"
-          ? "Candidate application"
-          : "Winston";
+    const chatStreamLoading = useSkeletonReveal({ ready: !!job });
 
     return (
       <div className="panel" ref={ref}>
-        <div className="panel-header">
-          <div className="panel-header-left">
-            {headerMode !== "default" ? (
-              <button
-                className="panel-header-back"
-                type="button"
-                aria-label="Back"
-                onClick={headerMode === "candidate" ? onCloseCandidateApp : onCloseJobList}
-              >
-                {backBtnSvg}
-              </button>
-            ) : null}
-            <span className="panel-title">{headerTitle}</span>
-          </div>
-          <div className="panel-header-actions">
-            <div className="menu-anchor">
-              <div
-                className="panel-icon-btn"
-                ref={menuBtnRef}
-                onClick={onToggleMenu}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") onToggleMenu();
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="5" cy="12" r="2" />
-                  <circle cx="12" cy="12" r="2" />
-                  <circle cx="19" cy="12" r="2" />
-                </svg>
-              </div>
-              <div className="context-menu" ref={menuRef} role="menu">
-                <div
-                  className="context-menu-item"
-                  role="menuitem"
-                  onClick={() => onMenuAction("reset")}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#383C38" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                    <path d="M21 4v5h-5" />
-                  </svg>
-                  Reset conversation
-                </div>
-                <div
-                  className="context-menu-item"
-                  role="menuitem"
-                  onClick={() => onMenuAction("history")}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#383C38" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 3v5h5" />
-                    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
-                    <path d="M12 7v5l3 2" />
-                  </svg>
-                  Load chat history
-                </div>
-              </div>
-            </div>
-            <div
-              className="panel-icon-btn"
-              onClick={onToggle}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onToggle();
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <PanelHeader
+          headerMode={headerMode}
+          onToggle={onToggle}
+          onToggleMenu={onToggleMenu}
+          onMenuAction={onMenuAction}
+          onCloseJobList={onCloseJobList}
+          onCloseCandidateApp={onCloseCandidateApp}
+          menuRef={menuRef}
+          menuBtnRef={menuBtnRef}
+        />
 
         <div className="panel-body-wrap">
           <div className="panel-body">
-            {job ? (
+            {chatStreamLoading ? (
+              <SuggestionChipSkeleton />
+            ) : (
+              <div className="suggestion-chip">user utterances</div>
+            )}
+            {chatStreamLoading ? (
+              <CompanionCardSkeleton />
+            ) : job ? (
               <CompanionCard
                 job={job}
                 onToggleSelect={onToggleSelect}
                 onOpenMore={onOpenJobList}
+                onOpenCandidate={onOpenCandidate}
               />
             ) : null}
-            <div className="suggestion-chip">user utterances</div>
+            {chatStreamLoading ? <QuickRepliesSkeleton /> : <QuickReplies />}
           </div>
 
           <JobListLayer
             ref={jobListLayerRef}
             candidates={allCandidates}
+            isOpen={jobListOpen}
             onToggleSelect={onToggleSelect}
             onOpenCandidate={onOpenCandidate}
           />
 
-          <CandidateAppLayer ref={candidateAppLayerRef} candidate={selectedCandidate} />
+          <CandidateAppLayer
+            ref={candidateAppLayerRef}
+            candidate={selectedCandidate}
+            isOpen={candidateAppOpen}
+          />
         </div>
 
         <div className="panel-footer">

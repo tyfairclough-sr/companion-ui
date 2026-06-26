@@ -142,6 +142,8 @@ export function WinstonScene() {
         job={job}
         allCandidates={allCandidates}
         selectedCandidate={selectedCandidate}
+        jobListOpen={animations.jobListOpen}
+        candidateAppOpen={animations.candidateAppOpen}
         headerMode={animations.headerMode}
         onToggle={animations.toggle}
         onToggleMenu={animations.toggleMenu}
