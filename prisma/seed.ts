@@ -27,6 +27,17 @@ const CANDIDATE_NAMES = [
 
 const ADDRESS = "Deåk Ferenc tér, Budapest, Hungary";
 
+const ADDRESS_OVERRIDES: Record<string, string> = {
+  "Zackary Hale Has . along name": "12 Rue de Rivoli, Paris, France",
+  "Margaret Chen Fitzgerald": "25 Rue de la République, Lyon, France",
+  "Oliver Blackwood-Smith": "8 Place de la Mairie, Rennes, France",
+};
+
+const BADGE_OVERRIDES: Record<string, string> = {
+  "Margaret Chen Fitzgerald": "Referral",
+  "Oliver Blackwood-Smith": "",
+};
+
 const EXPERIENCE = {
   dateRange: "Jan 2021 – Current (3 years)",
   title: "Courier",
@@ -50,9 +61,9 @@ async function main() {
 
   const job = await prisma.jobPosting.create({
     data: {
-      title: "A very long title indeed",
-      subtitle: "Subtitle",
-      badge: "Badge",
+      title: "Senior Sales Executive",
+      subtitle: "REF402",
+      badge: "Sourcing",
       secondaryText: "Secondary text",
     },
   });
@@ -61,8 +72,8 @@ async function main() {
     const candidate = await prisma.candidate.create({
       data: {
         name,
-        address: ADDRESS,
-        badgeType: "Employee",
+        address: ADDRESS_OVERRIDES[name] ?? ADDRESS,
+        badgeType: BADGE_OVERRIDES[name] ?? "Employee",
         matchScore: 2,
         subtitle: "A very long subtitle indeed",
         experience: {

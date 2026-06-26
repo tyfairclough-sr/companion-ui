@@ -1,10 +1,5 @@
 import { JobPostingCandidate } from "@/lib/types";
-
-const starSvg = (
-  <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 12, height: 12 }}>
-    <path d="M12 2l1.6 5.1L19 8.2l-4.2 3.3 1.5 5.2L12 13.8 7.7 16.7l1.5-5.2L5 8.2l5.4-1.1L12 2z" />
-  </svg>
-);
+import { MatchScore } from "./MatchScore";
 
 const chevronSvg = (
   <svg
@@ -65,13 +60,19 @@ export function CandidateRow({
       <div className="cc-row-main">
         <div className="cc-row-top">
           <span className="cc-name">{candidate.name}</span>
-          <span className="cc-badge cc-badge-grey">{candidate.badgeType}</span>
+          {candidate.badgeType && (
+            <span
+              className={`cc-badge ${
+                candidate.badgeType === "Referral" ? "cc-badge-green" : "cc-badge-grey"
+              }`}
+            >
+              {candidate.badgeType}
+            </span>
+          )}
         </div>
         <div className="cc-address">{candidate.address}</div>
       </div>
-      <span className="cc-match">
-        {starSvg} {candidate.matchScore}
-      </span>
+      <MatchScore score={candidate.matchScore} />
       {showChevron && (
         <button
           className="cc-row-chevron"

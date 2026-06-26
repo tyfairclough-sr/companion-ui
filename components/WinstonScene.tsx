@@ -27,6 +27,27 @@ function updateCandidateSelection(
   return list.map((c) => (c.id === id ? { ...c, selected } : c));
 }
 
+// Randomly allocate a match score (1–4) to each candidate, keeping the score
+// stable per-id so the same person shows the same score everywhere.
+function makeScoreAllocator() {
+  const scoreById = new Map<string, number>();
+  return (id: string) => {
+    let score = scoreById.get(id);
+    if (score === undefined) {
+      score = Math.floor(Math.random() * 4) + 1;
+      scoreById.set(id, score);
+    }
+    return score;
+  };
+}
+
+function withRandomScores(
+  list: JobPostingCandidate[],
+  scoreFor: (id: string) => number
+): JobPostingCandidate[] {
+  return list.map((c) => ({ ...c, matchScore: scoreFor(c.id) }));
+}
+
 export function WinstonScene() {
   const avatarRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<SVGSVGElement>(null);
@@ -67,8 +88,9 @@ export function WinstonScene() {
   useEffect(() => {
     Promise.all([fetchJobPosting(), fetchCandidates()])
       .then(([jobData, listData]: [JobPostingResponse, CandidatesListResponse]) => {
-        setJob(jobData);
-        setAllCandidates(listData.candidates);
+        const scoreFor = makeScoreAllocator();
+        setJob({ ...jobData, candidates: withRandomScores(jobData.candidates, scoreFor) });
+        setAllCandidates(withRandomScores(listData.candidates, scoreFor));
       })
       .catch(console.error);
   }, []);
@@ -89,8 +111,9 @@ export function WinstonScene() {
     } catch (error) {
       console.error(error);
       const [jobData, listData] = await Promise.all([fetchJobPosting(), fetchCandidates()]);
-      setJob(jobData);
-      setAllCandidates(listData.candidates);
+      const scoreFor = makeScoreAllocator();
+      setJob({ ...jobData, candidates: withRandomScores(jobData.candidates, scoreFor) });
+      setAllCandidates(withRandomScores(listData.candidates, scoreFor));
     }
   }, []);
 
