@@ -549,35 +549,105 @@ body {
   align-self: flex-end;
   background: #11314A;
   color: white;
-  font-size: 12px;
-  line-height: 1;
+  font-size: 14px;
+  line-height: 1.4;
   padding: 10px 16px;
   border-radius: 8px;
-  white-space: nowrap;
+  max-width: 90%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-/* ── Quick replies (suggested tappable user responses) ── */
-.quick-replies {
-  align-self: flex-end;
+/* ── AI reply (Winston assistant chat bubble) ── */
+.ai-reply {
+  align-self: flex-start;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 90%;
+}
+.ai-reply-bubble {
+  background: #EFF3EF;
+  color: #383C38;
+  font-size: 14px;
+  line-height: 20px;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+
+/* ── Quick replies (suggested tappable user prompts) ── */
+.quick-replies {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
 }
 .quick-reply {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
   background: white;
-  border: 1px solid #929692;
+  border: 1.5px solid #2563EB;
   border-radius: 999px;
   padding: 8px 14px;
   font-size: 14px;
   font-weight: 600;
-  line-height: 16px;
-  color: #238740;
+  line-height: 18px;
+  color: #383C38;
+  text-align: left;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
-.quick-reply:hover { background: #f6faf6; border-color: #238740; }
+.quick-reply:hover { background: #F2F6FF; border-color: #1D4FD7; }
+.quick-reply:focus-visible {
+  outline: none;
+  border-color: #1D4FD7;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.quick-reply-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-reply-plus {
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  color: #2563EB;
+}
+.quick-reply-icon {
+  flex-shrink: 0;
+  width: 14px; height: 14px;
+  color: #383C38;
+}
+
+/* Busy / done states (no border, muted grey pill) */
+.quick-reply--thinking,
+.quick-reply--complete {
+  background: #EAECEA;
+  border-color: transparent;
+  color: #6A6E6A;
+  cursor: default;
+}
+.quick-reply--thinking:hover,
+.quick-reply--complete:hover {
+  background: #EAECEA;
+  border-color: transparent;
+}
+.quick-reply--thinking .quick-reply-plus,
+.quick-reply--complete .quick-reply-plus { color: #929692; }
+
+.quick-reply-spinner { color: #238740; animation: quick-reply-spin 0.7s linear infinite; }
+.quick-reply-check { color: #238740; }
+
+@keyframes quick-reply-spin {
+  to { transform: rotate(360deg); }
+}
 
 /* ── Companion card list (Figma: SPL Companion / card / list) ── */
 .companion-card {
@@ -597,6 +667,33 @@ body {
   padding: 16px;
   border-bottom: 1px solid #D6DAD6;
 }
+.cc-header-main { flex: 1; min-width: 0; }
+.cc-title {
+  font-size: 20px; font-weight: 700; line-height: 24px;
+  color: #383C38;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cc-subline {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px;
+}
+.cc-jobref {
+  font-size: 14px; line-height: 18px;
+  color: #6A6E6A;
+}
+.cc-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; line-height: 18px;
+  color: #383C38;
+}
+.cc-status-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #2563EB;
+  flex-shrink: 0;
+}
+
+/* Shared header bits (used by candidate app + candidate rows) */
 .cc-avatar {
   flex-shrink: 0;
   width: 40px; height: 40px;
@@ -605,16 +702,6 @@ body {
   color: #6A6E6A;
   font-size: 16px; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
-}
-.cc-header-main { flex: 1; min-width: 0; }
-.cc-title {
-  font-size: 20px; font-weight: 700; line-height: 24px;
-  color: #383C38;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.cc-subline {
-  display: flex; align-items: center; gap: 6px;
-  margin-top: 2px;
 }
 .cc-subtitle { font-size: 14px; color: #6A6E6A; }
 .cc-badge {
@@ -625,6 +712,7 @@ body {
   white-space: nowrap;
 }
 .cc-badge-grey { background: #61798B; }
+.cc-badge-green { background: #D8F0DE; color: #1E6B33; }
 .cc-header-actions {
   display: flex; flex-direction: column; align-items: flex-end;
   gap: 6px; flex-shrink: 0;
@@ -694,19 +782,48 @@ body {
   font-size: 12px; line-height: 16px; color: #6A6E6A;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* Winston match badge (medium = subtle amber) */
+/* Winston match score badge */
 .cc-match {
   flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   height: 20px;
-  padding: 0 8px 0 4px;
-  border: 1px solid white;
+  padding: 0 6px 0 4px;
   border-radius: 4px;
-  background: #FBF5E5;
-  color: #855007;
-  font-size: 12px; font-weight: 600;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
 }
-.cc-match svg { width: 12px; height: 12px; }
+.cc-match svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.cc-match-value {
+  min-width: 8px;
+  text-align: center;
+}
+.cc-match--4 {
+  background: #1A5C45;
+  border: 1px solid white;
+  color: white;
+}
+.cc-match--3 {
+  background: #3B9B4F;
+  border: 1px solid white;
+  color: white;
+}
+.cc-match--2 {
+  background: #FAF6EB;
+  border: 1px solid transparent;
+  color: #9A7229;
+}
+.cc-match--1 {
+  background: #FFF5F5;
+  border: 1px solid transparent;
+  color: #C62828;
+}
 .cc-row-chevron {
   flex-shrink: 0;
   width: 24px; height: 24px;
@@ -734,6 +851,11 @@ body {
 }
 .cc-footer-btn:hover { background: #eef3ee; }
 .cc-footer-btn svg { width: 16px; height: 16px; }
+.cc-footer-btn:disabled {
+  color: #B0B4B0;
+  cursor: not-allowed;
+}
+.cc-footer-btn:disabled:hover { background: transparent; }
 
 /* ── Panel footer / input bar ── */
 .panel-footer {
@@ -876,12 +998,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-bottom: 1px solid #F0F0F0;
   min-height: 56px;
-}
-
-.job-list-row:last-child {
-  border-bottom: none;
 }
 
 /* ── Panel header back-button state ── */
@@ -1231,10 +1348,12 @@ body {
 
 .stream-skeleton-quick-replies {
   pointer-events: none;
+  align-self: stretch;
+  align-items: flex-start;
 }
 .stream-skeleton-quick-reply {
-  height: 32px;
-  width: 116px;
+  height: 36px;
+  width: 80%;
   border-radius: 999px;
 }
 
