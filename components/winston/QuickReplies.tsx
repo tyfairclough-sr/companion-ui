@@ -1,19 +1,27 @@
+"use client";
+
+import { useState } from "react";
+
 type QuickReplyStatus = "idle" | "thinking" | "complete";
 
 interface QuickReplyItem {
   label: string;
   status?: QuickReplyStatus;
+  /** Alternate labels the refresh icon cycles through (after the base label). */
+  alternates?: string[];
 }
 
 interface QuickRepliesProps {
   replies?: (string | QuickReplyItem)[];
   onSelect?: (reply: string) => void;
+  /** Disables the entire group (e.g. after one reply has been chosen). */
+  disabled?: boolean;
 }
 
 const DEFAULT_REPLIES: QuickReplyItem[] = [
   { label: "Show job pipeline health" },
   { label: "Who are the top candidates?" },
-  { label: "Shortlist Zackary and Margaret" },
+  { label: "Shortlist Zackary and Margaret", alternates: ["Shortlist Oliver and Priya"] },
 ];
 
 function normalize(reply: string | QuickReplyItem): QuickReplyItem {
@@ -63,26 +71,64 @@ function CheckIcon() {
   );
 }
 
-export function QuickReplies({ replies = DEFAULT_REPLIES, onSelect }: QuickRepliesProps) {
+export function QuickReplies({ replies = DEFAULT_REPLIES, onSelect, disabled = false }: QuickRepliesProps) {
+  const [labelIndices, setLabelIndices] = useState<Record<string, number>>({});
+
   if (replies.length === 0) return null;
 
   return (
-    <div className="quick-replies" role="group" aria-label="Quick replies">
+    <div
+      className={`quick-replies${disabled ? " quick-replies--disabled" : ""}`}
+      role="group"
+      aria-label="Quick replies"
+    >
       {replies.map((raw) => {
-        const { label, status = "idle" } = normalize(raw);
+        const { label: baseLabel, status = "idle", alternates = [] } = normalize(raw);
         const isBusy = status !== "idle";
+        const labelCycle = [baseLabel, ...alternates];
+        const currentIndex = labelIndices[baseLabel] ?? 0;
+        const label = labelCycle[currentIndex] ?? baseLabel;
+        const canRefresh = status === "idle" && alternates.length > 0;
+
+        const handleRefresh = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (disabled) return;
+          setLabelIndices((prev) => ({
+            ...prev,
+            [baseLabel]: ((prev[baseLabel] ?? 0) + 1) % labelCycle.length,
+          }));
+        };
 
         return (
           <button
-            key={label}
+            key={baseLabel}
             type="button"
             className={`quick-reply quick-reply--${status}`}
             onClick={() => onSelect?.(label)}
-            disabled={isBusy}
+            disabled={isBusy || disabled}
           >
             <PlusIcon />
             <span className="quick-reply-label">{label}</span>
-            {status === "idle" && <RefreshIcon />}
+            {status === "idle" &&
+              (canRefresh ? (
+                <span
+                  className="quick-reply-refresh"
+                  role="button"
+                  tabIndex={disabled ? -1 : 0}
+                  aria-label="Show a different suggestion"
+                  onClick={handleRefresh}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleRefresh(e as unknown as React.MouseEvent);
+                    }
+                  }}
+                >
+                  <RefreshIcon />
+                </span>
+              ) : (
+                <RefreshIcon />
+              ))}
             {status === "thinking" && <SpinnerIcon />}
             {status === "complete" && <CheckIcon />}
           </button>

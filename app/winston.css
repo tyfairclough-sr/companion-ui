@@ -492,6 +492,12 @@ body {
   width: 0;
 }
 
+.panel-header-return-wrap {
+  overflow: hidden;
+  flex-shrink: 0;
+  width: 0;
+}
+
 .panel-header-actions {
   display: flex;
   align-items: center;
@@ -612,6 +618,58 @@ body {
   border-radius: 8px;
 }
 
+/* ── Chat loading indicator (post-action processing state) ── */
+.chat-loading {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 90%;
+  transform-origin: bottom left;
+  animation: chat-bubble-in 200ms ease-out;
+}
+
+.chat-loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4BD675;
+  animation: chat-dot-wave 1.2s infinite ease-in-out;
+}
+
+.chat-loading-dots span:nth-child(1) { animation-delay: 0s; }
+.chat-loading-dots span:nth-child(2) { animation-delay: 0.18s; }
+.chat-loading-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes chat-dot-wave {
+  0%, 70%, 100% {
+    background: #C8EED5;
+    transform: translateY(0);
+  }
+  35% {
+    background: #238740;
+    transform: translateY(-3px);
+  }
+}
+
+.chat-loading-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: #6A6E6A;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-loading-dots span {
+    animation: none;
+  }
+}
+
 /* ── Quick replies (suggested tappable user prompts) ── */
 .quick-replies {
   align-self: stretch;
@@ -663,6 +721,21 @@ body {
   color: #383C38;
 }
 
+.quick-reply-refresh {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 2px;
+  margin: -2px;
+  transition: background 0.15s, opacity 0.15s;
+}
+.quick-reply-refresh:hover { background: rgba(56, 60, 56, 0.1); }
+.quick-reply-refresh:focus-visible { outline: 2px solid #383C38; outline-offset: 1px; }
+.quick-replies--disabled .quick-reply-refresh { cursor: default; pointer-events: none; }
+
 /* Busy / done states (no border, muted grey pill) */
 .quick-reply--thinking,
 .quick-reply--complete {
@@ -681,6 +754,22 @@ body {
 
 .quick-reply-spinner { color: #238740; animation: quick-reply-spin 0.7s linear infinite; }
 .quick-reply-check { color: #238740; }
+
+/* Whole group disabled after a reply is chosen */
+.quick-replies--disabled .quick-reply {
+  background: #EAECEA;
+  border-color: transparent;
+  color: #6A6E6A;
+  cursor: default;
+  opacity: 0.75;
+}
+.quick-replies--disabled .quick-reply:hover {
+  background: #EAECEA;
+  border-color: transparent;
+  box-shadow: none;
+}
+.quick-replies--disabled .quick-reply-plus,
+.quick-replies--disabled .quick-reply-icon { color: #929692; }
 
 @keyframes quick-reply-spin {
   to { transform: rotate(360deg); }
@@ -941,6 +1030,8 @@ body {
   padding: 0;
 }
 .panel-send-btn:hover { opacity: 0.65; }
+.panel-send-btn:disabled { opacity: 0.35; cursor: default; }
+.panel-send-btn:disabled:hover { opacity: 0.35; }
 
 .panel-footer-caption {
   text-align: center;
@@ -1056,6 +1147,22 @@ body {
 .panel-header-back:hover { background: #f3f3f3; }
 .panel-header-back svg { width: 18px; height: 18px; }
 
+/* ── Return-to-chat button (shown when >1 layer deep) ── */
+.panel-header-return {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #383C38;
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.panel-header-return:hover { background: #f3f3f3; }
+.panel-header-return svg { width: 18px; height: 18px; }
+
 /* ── Candidate application layer (slides in over job list) ── */
 .candidate-app-layer {
   position: absolute;
@@ -1071,6 +1178,210 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding-bottom: 72px;
+}
+
+/* ── Contact card layer (slides in over candidate application) ── */
+.contact-card-layer {
+  position: absolute;
+  inset: 0;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+}
+
+.contact-card-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 16px;
+  color: #383C38;
+}
+
+.contact-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.contact-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #EFF3EF;
+  color: #6A6E6A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.contact-head-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-name {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.contact-subtitle {
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6A6E6A;
+}
+
+.contact-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.contact-badge {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.contact-badge-grey {
+  background: #EFF1EF;
+  color: #383C38;
+}
+
+.contact-badge-link {
+  color: #0064D9;
+  background: transparent;
+  padding: 4px 0;
+}
+
+.contact-socials {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.contact-social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #383C38;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.contact-social-btn:hover { color: #0064D9; }
+
+.contact-social-btn svg { width: 20px; height: 20px; }
+
+.contact-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.contact-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #383C38;
+}
+
+.contact-meta-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #6A6E6A;
+}
+
+.contact-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #0064D9;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.contact-link:hover { text-decoration: underline; }
+
+.contact-link svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #6A6E6A;
+}
+
+.contact-other {
+  border-top: 1px solid #F0F0F0;
+  padding-top: 16px;
+}
+
+.contact-other-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #383C38;
+}
+
+.contact-other-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #6A6E6A;
+}
+
+.contact-other-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #6A6E6A;
+  transition: transform 0.2s ease;
+}
+
+.contact-other-chevron.open { transform: rotate(180deg); }
+
+.contact-other-list {
+  margin-top: 12px;
+}
+
+.contact-other-empty {
+  font-size: 14px;
+  line-height: 20px;
+  color: #6A6E6A;
 }
 
 .ca-card {
@@ -1185,6 +1496,31 @@ body {
   padding: 0 16px 16px;
 }
 
+.ca-coming-soon {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 48px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #6A6E6A;
+}
+
+.ca-resume {
+  flex: 1;
+  padding: 0 16px 16px;
+}
+
+.ca-resume-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #E4E7E4;
+}
+
 .ca-section + .ca-section {
   margin-top: 8px;
   padding-top: 16px;
@@ -1245,17 +1581,22 @@ body {
 
 .ca-show-more:hover { text-decoration: underline; }
 
-.ca-footer {
+.ca-floating-actions {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 8px;
   background: #F6FAF6;
-  border-top: 1px solid #D6DAD6;
-  flex-shrink: 0;
-  margin-top: auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.05);
+  z-index: 2;
 }
 
-.ca-footer-btn {
+.ca-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1266,12 +1607,13 @@ body {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
+  line-height: 20px;
   color: #383C38;
 }
 
-.ca-footer-btn:hover { background: #eef3ee; }
+.ca-action-btn:hover { background: #eef3ee; }
 
-.ca-footer-btn svg { width: 16px; height: 16px; }
+.ca-action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 .job-list-row { cursor: pointer; }
 .job-list-row:hover { background: #FAFAFA; }

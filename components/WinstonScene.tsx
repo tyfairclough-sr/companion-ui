@@ -10,7 +10,6 @@ import {
   fetchCandidate,
   fetchCandidates,
   fetchJobPosting,
-  toggleCandidateSelection,
 } from "@/lib/api";
 import {
   CandidateDetailResponse,
@@ -25,6 +24,12 @@ function updateCandidateSelection(
   selected: boolean
 ): JobPostingCandidate[] {
   return list.map((c) => (c.id === id ? { ...c, selected } : c));
+}
+
+// Selection is intentionally session-only: clear any persisted selection so the
+// lists always start unselected on a fresh page load / refresh.
+function clearSelection(list: JobPostingCandidate[]): JobPostingCandidate[] {
+  return list.map((c) => ({ ...c, selected: false }));
 }
 
 // Randomly allocate a match score (1–4) to each candidate, keeping the score
@@ -54,6 +59,7 @@ export function WinstonScene() {
   const panelRef = useRef<HTMLDivElement>(null);
   const jobListLayerRef = useRef<HTMLDivElement>(null);
   const candidateAppLayerRef = useRef<HTMLDivElement>(null);
+  const contactCardLayerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +74,7 @@ export function WinstonScene() {
       panelRef,
       jobListLayerRef,
       candidateAppLayerRef,
+      contactCardLayerRef,
       menuRef,
       menuBtnRef,
     }),
@@ -90,13 +97,16 @@ export function WinstonScene() {
     Promise.all([fetchJobPosting(), fetchCandidates()])
       .then(([jobData, listData]: [JobPostingResponse, CandidatesListResponse]) => {
         const scoreFor = makeScoreAllocator();
-        setJob({ ...jobData, candidates: withRandomScores(jobData.candidates, scoreFor) });
-        setAllCandidates(withRandomScores(listData.candidates, scoreFor));
+        setJob({
+          ...jobData,
+          candidates: clearSelection(withRandomScores(jobData.candidates, scoreFor)),
+        });
+        setAllCandidates(clearSelection(withRandomScores(listData.candidates, scoreFor)));
       })
       .catch(console.error);
   }, []);
 
-  const handleToggleSelect = useCallback(async (id: string, selected: boolean) => {
+  const handleToggleSelect = useCallback((id: string, selected: boolean) => {
     setJob((prev) =>
       prev
         ? {
@@ -106,16 +116,6 @@ export function WinstonScene() {
         : prev
     );
     setAllCandidates((prev) => updateCandidateSelection(prev, id, selected));
-
-    try {
-      await toggleCandidateSelection(id, selected);
-    } catch (error) {
-      console.error(error);
-      const [jobData, listData] = await Promise.all([fetchJobPosting(), fetchCandidates()]);
-      const scoreFor = makeScoreAllocator();
-      setJob({ ...jobData, candidates: withRandomScores(jobData.candidates, scoreFor) });
-      setAllCandidates(withRandomScores(listData.candidates, scoreFor));
-    }
   }, []);
 
   const handleOpenCandidate = useCallback(
@@ -169,6 +169,7 @@ export function WinstonScene() {
         selectedCandidate={selectedCandidate}
         jobListOpen={animations.jobListOpen}
         candidateAppOpen={animations.candidateAppOpen}
+        contactCardOpen={animations.contactCardOpen}
         headerMode={animations.headerMode}
         onToggle={animations.toggle}
         onToggleMenu={animations.toggleMenu}
@@ -176,12 +177,16 @@ export function WinstonScene() {
         onOpenJobList={animations.openJobList}
         onCloseJobList={animations.closeJobList}
         onCloseCandidateApp={() => animations.closeCandidateApp()}
+        onOpenContactCard={animations.openContactCard}
+        onCloseContactCard={() => animations.closeContactCard()}
+        onReturnToChat={animations.returnToChat}
         onToggleSelect={handleToggleSelect}
         onOpenCandidate={handleOpenCandidate}
         menuRef={menuRef}
         menuBtnRef={menuBtnRef}
         jobListLayerRef={jobListLayerRef}
         candidateAppLayerRef={candidateAppLayerRef}
+        contactCardLayerRef={contactCardLayerRef}
       />
     </>
   );

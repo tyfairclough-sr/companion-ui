@@ -1,24 +1,32 @@
 "use client";
 
-import { forwardRef, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { CandidateDetailResponse } from "@/lib/types";
 import { candidateInitials } from "@/lib/animation";
 import { useSkeletonReveal } from "@/hooks/useSkeletonReveal";
 import { CandidateAppSkeleton } from "./skeletons/LayerSkeletons";
 
+type CandidateTab = "Overview" | "Screening" | "Match";
+
 interface CandidateAppLayerProps {
   candidate: CandidateDetailResponse | null;
   isOpen: boolean;
+  onContact: () => void;
 }
 
 export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerProps>(
-  function CandidateAppLayer({ candidate, isOpen }, ref) {
+  function CandidateAppLayer({ candidate, isOpen, onContact }, ref) {
     const [profileView, setProfileView] = useState<"Profile" | "Resume">("Profile");
+    const [activeTab, setActiveTab] = useState<CandidateTab>("Overview");
     const isLoading = useSkeletonReveal({
       enabled: isOpen,
       ready: !!candidate,
       resetKey: candidate?.id ?? null,
     });
+
+    useEffect(() => {
+      setActiveTab("Overview");
+    }, [candidate?.id]);
 
     if (!candidate && !isOpen) {
       return <div className="candidate-app-layer" ref={ref} />;
@@ -42,7 +50,7 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
                 </div>
               </div>
               <div className="cc-header-actions">
-                <button className="cc-contact-btn" type="button">
+                <button className="cc-contact-btn" type="button" onClick={onContact}>
                   Contact
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
@@ -54,13 +62,31 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
             </div>
 
             <div className="ca-tabs" role="tablist" aria-label="Application sections">
-              <button className="ca-tab active" type="button" role="tab" aria-selected="true">
+              <button
+                className={`ca-tab${activeTab === "Overview" ? " active" : ""}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "Overview"}
+                onClick={() => setActiveTab("Overview")}
+              >
                 Overview
               </button>
-              <button className="ca-tab" type="button" role="tab" aria-selected="false">
+              <button
+                className={`ca-tab${activeTab === "Screening" ? " active" : ""}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "Screening"}
+                onClick={() => setActiveTab("Screening")}
+              >
                 Screening
               </button>
-              <button className="ca-tab" type="button" role="tab" aria-selected="false">
+              <button
+                className={`ca-tab${activeTab === "Match" ? " active" : ""}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "Match"}
+                onClick={() => setActiveTab("Match")}
+              >
                 Match
                 <span className="ca-tab-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -70,6 +96,8 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
               </button>
             </div>
 
+            {activeTab === "Overview" ? (
+            <>
             <div className="ca-controls">
               <div className="ca-segment" role="group" aria-label="Profile view">
                 <button
@@ -95,6 +123,11 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
               </a>
             </div>
 
+            {profileView === "Resume" ? (
+            <div className="ca-resume">
+              <img className="ca-resume-img" src="/candidate-resume.png" alt={`${candidate.name} resume`} />
+            </div>
+            ) : (
             <div className="ca-body">
               <section className="ca-section">
                 <h2 className="ca-section-title">Experience</h2>
@@ -124,34 +157,42 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
                 ))}
               </section>
             </div>
-
-            <div className="ca-footer">
-              <button className="ca-footer-btn" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M19 8v6M22 11h-6" />
-                </svg>
-                Label
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </button>
-              <button className="ca-footer-btn" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M19 8v6M22 11h-6" />
-                </svg>
-                Label
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </button>
-            </div>
+            )}
+            </>
+            ) : (
+              <div className="ca-coming-soon" role="tabpanel">
+                Coming soon
+              </div>
+            )}
           </div>
           ) : null}
         </div>
+        {!isLoading && candidate && activeTab === "Overview" ? (
+          <div className="ca-floating-actions">
+            <button className="ca-action-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M19 8v6M22 11h-6" />
+              </svg>
+              Label
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+            <button className="ca-action-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M19 8v6M22 11h-6" />
+              </svg>
+              Label
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
