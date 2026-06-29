@@ -10,13 +10,26 @@ A Next.js application.
    npm install
    ```
 
-2. Create your local environment file from the template:
+2. Start local Postgres (optional if you already have a DB):
+
+   ```bash
+   docker compose up -d
+   ```
+
+3. Create your local environment file from the template:
 
    ```bash
    cp .env.example .env
    ```
 
-3. Start the dev server:
+4. Apply migrations and seed (first time only):
+
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+5. Start the dev server:
 
    ```bash
    npm run dev
@@ -46,3 +59,68 @@ via `-p`:
 > Note: This `dev` script uses POSIX shell features, so it works on macOS/Linux.
 > Production (`npm run build` / `npm start`) is unaffected and uses the platform's
 > own `PORT` (e.g. the one Render injects).
+
+## Production database (Neon)
+
+Production uses [Neon](https://neon.tech) serverless Postgres. The app is already
+configured for two connection strings:
+
+| Variable | Purpose | Neon type |
+|----------|---------|-----------|
+| `DATABASE_URL` | App runtime queries | **Pooled** (`-pooler` in hostname) |
+| `DIRECT_URL` | `prisma migrate deploy` and seed during build | **Direct** (no `-pooler`) |
+
+Prisma reads both from `prisma/schema.prisma` (`url` + `directUrl`).
+
+### 1. Create a Neon project
+
+1. Sign up at [console.neon.tech](https://console.neon.tech).
+2. **New project** — pick a region close to your host (e.g. `eu-west-1` if on Render EU).
+3. Open the project → **Connect**.
+4. Copy **both** connection strings:
+   - **Pooled connection** → `DATABASE_URL`
+   - **Direct connection** → `DIRECT_URL`
+5. Ensure each URL includes `?sslmode=require`.
+
+Example (replace with your values):
+
+```bash
+DATABASE_URL="postgresql://neondb_owner:****@ep-xxxx-pooler.eu-west-1.aws.neon.tech/neondb?sslmode=require"
+DIRECT_URL="postgresql://neondb_owner:****@ep-xxxx.eu-west-1.aws.neon.tech/neondb?sslmode=require"
+```
+
+### 2. Set env vars on your host (Render)
+
+In the Render dashboard for your web service:
+
+1. **Environment** → add or update:
+   - `DATABASE_URL` = Neon **pooled** URL
+   - `DIRECT_URL` = Neon **direct** URL
+2. Save and trigger a **manual deploy** (or push to `main`).
+
+The build script runs migrations and seed against Neon automatically:
+
+```json
+"build": "prisma generate && prisma migrate deploy && prisma db seed && next build"
+```
+
+`migrate deploy` uses `DIRECT_URL`; the running app uses `DATABASE_URL`.
+
+### 3. Verify from your machine (optional)
+
+Point at production once to confirm connectivity:
+
+```bash
+DIRECT_URL="postgresql://..." npm run db:migrate
+```
+
+You should see pending migrations applied (or “No pending migrations”).
+
+### Local vs production
+
+| Environment | Database | Config |
+|-------------|----------|--------|
+| Local | Docker Postgres (`docker compose up -d`) | `.env` with localhost URLs |
+| Production | Neon | Render env vars (pooled + direct) |
+
+Do **not** commit real Neon credentials; only `.env.example` is tracked in git.
