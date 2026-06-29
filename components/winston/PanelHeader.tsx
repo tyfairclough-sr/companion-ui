@@ -9,51 +9,72 @@ const backBtnSvg = (
   </svg>
 );
 
+const returnBtnSvg = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h11a5 5 0 0 1 0 10H9" />
+  </svg>
+);
+
 const TITLES = {
   default: "Winston",
   jobList: "Applicant List",
   candidate: "Candidate application",
+  contact: "Contact",
 } as const;
 
 type HeaderMode = keyof typeof TITLES;
 
 interface PanelHeaderProps {
   headerMode: HeaderMode;
+  canReturnToChat: boolean;
   onToggle: () => void;
   onToggleMenu: (e?: React.MouseEvent) => void;
   onMenuAction: (action: "reset" | "history") => void;
   onCloseJobList: () => void;
   onCloseCandidateApp: () => void;
+  onCloseContactCard: () => void;
+  onReturnToChat: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
   menuBtnRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const BACK_WRAP_WIDTH = 30;
 const BACK_WRAP_GAP = 10;
+const RETURN_WRAP_WIDTH = 30;
+const RETURN_WRAP_GAP = 6;
 const HEADER_DURATION = 0.28;
 
 export function PanelHeader({
   headerMode,
+  canReturnToChat,
   onToggle,
   onToggleMenu,
   onMenuAction,
   onCloseJobList,
   onCloseCandidateApp,
+  onCloseContactCard,
+  onReturnToChat,
   menuRef,
   menuBtnRef,
 }: PanelHeaderProps) {
+  const returnWrapRef = useRef<HTMLDivElement>(null);
+  const returnRef = useRef<HTMLButtonElement>(null);
   const backWrapRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
   const defaultTitleRef = useRef<HTMLSpanElement>(null);
   const jobListTitleRef = useRef<HTMLSpanElement>(null);
   const candidateTitleRef = useRef<HTMLSpanElement>(null);
+  const contactTitleRef = useRef<HTMLSpanElement>(null);
   const titleRefByMode: Record<HeaderMode, React.RefObject<HTMLSpanElement | null>> = {
     default: defaultTitleRef,
     jobList: jobListTitleRef,
     candidate: candidateTitleRef,
+    contact: contactTitleRef,
   };
   const prevModeRef = useRef<HeaderMode>(headerMode);
   const initializedRef = useRef(false);
+  const returnInitializedRef = useRef(false);
 
   useEffect(() => {
     const backWrap = backWrapRef.current;
@@ -130,9 +151,64 @@ export function PanelHeader({
     prevModeRef.current = headerMode;
   }, [headerMode]);
 
+  useEffect(() => {
+    const returnWrap = returnWrapRef.current;
+    const returnBtn = returnRef.current;
+    if (!returnWrap || !returnBtn) return;
+
+    if (!returnInitializedRef.current) {
+      returnInitializedRef.current = true;
+      gsap.set(returnWrap, {
+        width: canReturnToChat ? RETURN_WRAP_WIDTH : 0,
+        marginRight: canReturnToChat ? RETURN_WRAP_GAP : 0,
+      });
+      gsap.set(returnBtn, { autoAlpha: canReturnToChat ? 1 : 0, x: canReturnToChat ? 0 : -10 });
+      return;
+    }
+
+    const tl = gsap.timeline();
+    if (canReturnToChat) {
+      gsap.set(returnBtn, { autoAlpha: 0, x: -10 });
+      tl.to(
+        returnWrap,
+        { width: RETURN_WRAP_WIDTH, marginRight: RETURN_WRAP_GAP, duration: HEADER_DURATION, ease: "power2.out" },
+        0
+      );
+      tl.to(
+        returnBtn,
+        { autoAlpha: 1, x: 0, duration: HEADER_DURATION, ease: "power2.out" },
+        0.04
+      );
+    } else {
+      tl.to(
+        returnBtn,
+        { autoAlpha: 0, x: -10, duration: HEADER_DURATION * 0.75, ease: "power2.in" },
+        0
+      );
+      tl.to(
+        returnWrap,
+        { width: 0, marginRight: 0, duration: HEADER_DURATION, ease: "power2.inOut" },
+        0
+      );
+    }
+  }, [canReturnToChat]);
+
   return (
     <div className="panel-header">
       <div className="panel-header-left">
+        <div className="panel-header-return-wrap" ref={returnWrapRef}>
+          <button
+            ref={returnRef}
+            className="panel-header-return"
+            type="button"
+            aria-label="Back to chat"
+            aria-hidden={!canReturnToChat}
+            tabIndex={canReturnToChat ? 0 : -1}
+            onClick={onReturnToChat}
+          >
+            {returnBtnSvg}
+          </button>
+        </div>
         <div className="panel-header-back-wrap" ref={backWrapRef}>
           <button
             ref={backRef}
@@ -141,7 +217,13 @@ export function PanelHeader({
             aria-label="Back"
             aria-hidden={headerMode === "default"}
             tabIndex={headerMode === "default" ? -1 : 0}
-            onClick={headerMode === "candidate" ? onCloseCandidateApp : onCloseJobList}
+            onClick={
+              headerMode === "contact"
+                ? onCloseContactCard
+                : headerMode === "candidate"
+                ? onCloseCandidateApp
+                : onCloseJobList
+            }
           >
             {backBtnSvg}
           </button>
@@ -167,6 +249,13 @@ export function PanelHeader({
             aria-hidden={headerMode !== "candidate"}
           >
             {TITLES.candidate}
+          </span>
+          <span
+            ref={contactTitleRef}
+            className="panel-title panel-title-item"
+            aria-hidden={headerMode !== "contact"}
+          >
+            {TITLES.contact}
           </span>
         </div>
       </div>

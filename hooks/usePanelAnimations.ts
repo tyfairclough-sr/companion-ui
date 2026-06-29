@@ -7,6 +7,7 @@ import {
   AnimationSettings,
   AVATAR_EXIT_X,
   CANDIDATE_SLIDE,
+  CONTACT_CARD_SLIDE,
   JOB_LIST_SLIDE,
   PANEL_HIDE_X,
   easeFor,
@@ -20,6 +21,7 @@ interface PanelAnimationRefs {
   panelRef: React.RefObject<HTMLDivElement | null>;
   jobListLayerRef: React.RefObject<HTMLDivElement | null>;
   candidateAppLayerRef: React.RefObject<HTMLDivElement | null>;
+  contactCardLayerRef: React.RefObject<HTMLDivElement | null>;
   menuRef: React.RefObject<HTMLDivElement | null>;
   menuBtnRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -34,21 +36,23 @@ export function usePanelAnimations(
   const [notifVisible, setNotifVisible] = useState(false);
   const [jobListOpen, setJobListOpen] = useState(false);
   const [candidateAppOpen, setCandidateAppOpen] = useState(false);
+  const [contactCardOpen, setContactCardOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [headerMode, setHeaderMode] = useState<"default" | "jobList" | "candidate">("default");
+  const [headerMode, setHeaderMode] = useState<"default" | "jobList" | "candidate" | "contact">("default");
 
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
 
   useGSAP(
     () => {
-      const { avatarRef, notifRef, panelRef, jobListLayerRef, candidateAppLayerRef } = refs;
+      const { avatarRef, notifRef, panelRef, jobListLayerRef, candidateAppLayerRef, contactCardLayerRef } = refs;
       if (
         !avatarRef.current ||
         !notifRef.current ||
         !panelRef.current ||
         !jobListLayerRef.current ||
-        !candidateAppLayerRef.current
+        !candidateAppLayerRef.current ||
+        !contactCardLayerRef.current
       ) {
         return;
       }
@@ -58,6 +62,7 @@ export function usePanelAnimations(
       gsap.set(notifRef.current, { scale: 0, autoAlpha: 0, transformOrigin: "50% 50%" });
       gsap.set(jobListLayerRef.current, { x: JOB_LIST_SLIDE });
       gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
+      gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
     },
     { dependencies: [] }
   );
@@ -98,15 +103,19 @@ export function usePanelAnimations(
   );
 
   const resetLayers = useCallback(() => {
-    const { jobListLayerRef, candidateAppLayerRef } = refs;
+    const { jobListLayerRef, candidateAppLayerRef, contactCardLayerRef } = refs;
     setJobListOpen(false);
     setCandidateAppOpen(false);
+    setContactCardOpen(false);
     setHeaderMode("default");
     if (jobListLayerRef.current) {
       gsap.set(jobListLayerRef.current, { x: JOB_LIST_SLIDE });
     }
     if (candidateAppLayerRef.current) {
       gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
+    }
+    if (contactCardLayerRef.current) {
+      gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
     }
   }, [refs]);
 
@@ -305,6 +314,77 @@ export function usePanelAnimations(
     [candidateAppOpen, jobListOpen, refs]
   );
 
+  const openContactCard = useCallback(() => {
+    const { contactCardLayerRef } = refs;
+    if (contactCardOpen || !contactCardLayerRef.current) return;
+
+    setContactCardOpen(true);
+    setHeaderMode("contact");
+
+    gsap.killTweensOf(contactCardLayerRef.current);
+    gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
+    gsap.to(contactCardLayerRef.current, { x: 0, duration: 0.35, ease: "power2.out" });
+  }, [contactCardOpen, refs]);
+
+  const closeContactCard = useCallback(
+    (instant = false) => {
+      const { contactCardLayerRef } = refs;
+      if (!contactCardOpen || !contactCardLayerRef.current) return;
+
+      setContactCardOpen(false);
+      setHeaderMode(candidateAppOpen ? "candidate" : jobListOpen ? "jobList" : "default");
+
+      gsap.killTweensOf(contactCardLayerRef.current);
+      if (instant) {
+        gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
+        return;
+      }
+
+      gsap.to(contactCardLayerRef.current, {
+        x: CONTACT_CARD_SLIDE,
+        duration: 0.3,
+        ease: "power2.in",
+      });
+    },
+    [candidateAppOpen, contactCardOpen, jobListOpen, refs]
+  );
+
+  const returnToChat = useCallback(() => {
+    const { jobListLayerRef, candidateAppLayerRef, contactCardLayerRef } = refs;
+
+    if (contactCardOpen && contactCardLayerRef.current) {
+      gsap.killTweensOf(contactCardLayerRef.current);
+      gsap.to(contactCardLayerRef.current, {
+        x: CONTACT_CARD_SLIDE,
+        duration: 0.3,
+        ease: "power2.in",
+      });
+      setContactCardOpen(false);
+    }
+
+    if (candidateAppOpen && candidateAppLayerRef.current) {
+      gsap.killTweensOf(candidateAppLayerRef.current);
+      gsap.to(candidateAppLayerRef.current, {
+        x: CANDIDATE_SLIDE,
+        duration: 0.3,
+        ease: "power2.in",
+      });
+      setCandidateAppOpen(false);
+    }
+
+    if (jobListOpen && jobListLayerRef.current) {
+      gsap.killTweensOf(jobListLayerRef.current);
+      gsap.to(jobListLayerRef.current, {
+        x: JOB_LIST_SLIDE,
+        duration: 0.3,
+        ease: "power2.in",
+      });
+      setJobListOpen(false);
+    }
+
+    setHeaderMode("default");
+  }, [candidateAppOpen, contactCardOpen, jobListOpen, refs]);
+
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -327,6 +407,7 @@ export function usePanelAnimations(
     notifVisible,
     jobListOpen,
     candidateAppOpen,
+    contactCardOpen,
     menuOpen,
     headerMode,
     toggle,
@@ -335,6 +416,9 @@ export function usePanelAnimations(
     closeJobList,
     openCandidateApp,
     closeCandidateApp,
+    openContactCard,
+    closeContactCard,
+    returnToChat,
     toggleMenu,
     closeMenu,
   };

@@ -6,9 +6,10 @@ interface CompanionCardProps {
   onToggleSelect: (id: string, selected: boolean) => void;
   onOpenMore: () => void;
   onOpenCandidate: (id: string) => void;
+  onScheduleSelected: () => void;
 }
 
-export function CompanionCard({ job, onToggleSelect, onOpenMore, onOpenCandidate }: CompanionCardProps) {
+export function CompanionCard({ job, onToggleSelect, onOpenMore, onOpenCandidate, onScheduleSelected }: CompanionCardProps) {
   const hasSelection = job.candidates.some((candidate) => candidate.selected);
 
   return (
@@ -38,7 +39,7 @@ export function CompanionCard({ job, onToggleSelect, onOpenMore, onOpenCandidate
       </div>
 
       <div className="cc-footer">
-        <button className="cc-footer-btn" type="button" disabled={!hasSelection}>
+        <button className="cc-footer-btn" type="button" disabled={!hasSelection} onClick={onScheduleSelected}>
           <svg
             viewBox="0 0 24 24"
             fill="none"

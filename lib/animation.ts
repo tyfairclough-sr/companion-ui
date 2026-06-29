@@ -21,6 +21,12 @@ export const PANEL_HIDE_X = 500;
 export const AVATAR_EXIT_X = 144;
 export const JOB_LIST_SLIDE = 420;
 export const CANDIDATE_SLIDE = 420;
+export const CONTACT_CARD_SLIDE = 420;
+
+// Applicant-list reveal: each row fades/slides in, staggered so the whole list
+// cascades top-to-bottom within JOB_LIST_REVEAL_STAGGER seconds.
+export const JOB_LIST_ROW_REVEAL_DURATION = 0.18;
+export const JOB_LIST_REVEAL_STAGGER = 0.25;
 
 export function candidateInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
