@@ -89,7 +89,20 @@ DATABASE_URL="postgresql://neondb_owner:****@ep-xxxx-pooler.eu-west-1.aws.neon.t
 DIRECT_URL="postgresql://neondb_owner:****@ep-xxxx.eu-west-1.aws.neon.tech/neondb?sslmode=require"
 ```
 
-### 2. Set env vars on your host (Render)
+### 2. Set env vars on Vercel
+
+In the Vercel dashboard for your project:
+
+1. **Settings** → **Environment Variables**
+2. Add or update (for **Production**, and Preview if those builds run migrations):
+   - `DATABASE_URL` = Neon **pooled** URL (`-pooler` in hostname)
+   - `DIRECT_URL` = Neon **direct** URL (no `-pooler`)
+3. **Do not** copy localhost values from your local `.env` — Vercel cannot reach `localhost:5432`.
+4. Save and **Redeploy** (or push to `main`).
+
+Optional: connect Neon via the [Vercel Marketplace integration](https://vercel.com/marketplace/neon); it may set `DATABASE_URL` automatically, but you still need to add `DIRECT_URL` manually from Neon Console.
+
+### 3. Set env vars on Render (if applicable)
 
 In the Render dashboard for your web service:
 
@@ -106,7 +119,7 @@ The build script runs migrations and seed against Neon automatically:
 
 `migrate deploy` uses `DIRECT_URL`; the running app uses `DATABASE_URL`.
 
-### 3. Verify from your machine (optional)
+### 4. Verify from your machine (optional)
 
 Point at production once to confirm connectivity:
 
@@ -121,6 +134,6 @@ You should see pending migrations applied (or “No pending migrations”).
 | Environment | Database | Config |
 |-------------|----------|--------|
 | Local | Docker Postgres (`docker compose up -d`) | `.env` with localhost URLs |
-| Production | Neon | Render env vars (pooled + direct) |
+| Production | Neon | Vercel / Render env vars (pooled + direct) |
 
 Do **not** commit real Neon credentials; only `.env.example` is tracked in git.
