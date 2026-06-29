@@ -53,6 +53,12 @@ const EDUCATION = {
 };
 
 async function main() {
+  const existing = await prisma.jobPosting.findFirst();
+  if (existing) {
+    console.log(`Database already has job posting "${existing.title}", skipping seed.`);
+    return;
+  }
+
   await prisma.jobCandidate.deleteMany();
   await prisma.candidateExperience.deleteMany();
   await prisma.candidateEducation.deleteMany();
