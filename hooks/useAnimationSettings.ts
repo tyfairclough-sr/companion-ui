@@ -34,13 +34,17 @@ function parseSettings(
     pnV: str("pnV", defaults.pnV),
     pnD: num("pnD", defaults.pnD),
     pnDel: num("pnDel", defaults.pnDel),
+    apV: str("apV", defaults.apV),
+    apD: num("apD", defaults.apD),
+    apDel: num("apDel", defaults.apDel),
   };
 }
 
 export function computeCodeSnippets(
   settings: AnimationSettings,
   isOpen: boolean,
-  notifVisible: boolean
+  notifVisible: boolean,
+  actionPanelOpen: boolean = false
 ) {
   const avDur = settings.avD / 1000;
   const avDelay = settings.avDel / 1000;
@@ -48,6 +52,8 @@ export function computeCodeSnippets(
   const ntDelay = settings.ntDel / 1000;
   const pnDur = settings.pnD / 1000;
   const pnDelay = settings.pnDel / 1000;
+  const apDur = settings.apD / 1000;
+  const apDelay = settings.apDel / 1000;
 
   const avProps = isOpen ? { x: 0, autoAlpha: 1 } : { x: AVATAR_EXIT_X, autoAlpha: 0 };
   const avEase = isOpen ? easeFor(settings.avV, "show") : easeFor(settings.avV, "hide");
@@ -58,10 +64,14 @@ export function computeCodeSnippets(
   const ntProps = notifVisible ? { scale: 0, autoAlpha: 0 } : { scale: 1, autoAlpha: 1 };
   const ntEase = notifVisible ? easeFor(settings.ntV, "hide") : easeFor(settings.ntV, "show");
 
+  const apProps = actionPanelOpen ? { autoAlpha: 1 } : { autoAlpha: 0 };
+  const apEase = actionPanelOpen ? easeFor(settings.apV, "show") : easeFor(settings.apV, "hide");
+
   return {
     avatar: tweenSnippet(".avatar-wrap", avProps, avDur, avEase, avDelay),
     notif: tweenSnippet(".notif-dot", ntProps, ntDur, ntEase, ntDelay),
     panel: tweenSnippet(".panel", pnProps, pnDur, pnEase, pnDelay),
+    actionPanel: tweenSnippet(".panel-action-col", apProps, apDur, apEase, apDelay),
   };
 }
 
@@ -103,6 +113,9 @@ export function useAnimationSettings(isOpen: boolean, notifVisible: boolean) {
         pnV: next.pnV,
         pnD: String(next.pnD),
         pnDel: String(next.pnDel),
+        apV: next.apV,
+        apD: String(next.apD),
+        apDel: String(next.apDel),
       });
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },

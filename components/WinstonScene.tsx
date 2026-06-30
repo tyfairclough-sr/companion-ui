@@ -5,6 +5,7 @@ import { AnimationTester } from "@/components/animation-tester/AnimationTester";
 import { AvatarTrigger } from "@/components/avatar/AvatarTrigger";
 import { WinstonPanel } from "@/components/winston/WinstonPanel";
 import { useAnimationSettings, computeCodeSnippets } from "@/hooks/useAnimationSettings";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { usePanelAnimations } from "@/hooks/usePanelAnimations";
 import {
   fetchCandidate,
@@ -57,6 +58,7 @@ export function WinstonScene() {
   const avatarRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<SVGSVGElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const actionColRef = useRef<HTMLDivElement>(null);
   const jobListLayerRef = useRef<HTMLDivElement>(null);
   const candidateAppLayerRef = useRef<HTMLDivElement>(null);
   const contactCardLayerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +74,7 @@ export function WinstonScene() {
       avatarRef,
       notifRef,
       panelRef,
+      actionColRef,
       jobListLayerRef,
       candidateAppLayerRef,
       contactCardLayerRef,
@@ -84,13 +87,21 @@ export function WinstonScene() {
   const { settings, updateSettings, saveAsDefault, formatDuration } =
     useAnimationSettings(false, false);
 
-  const animations = usePanelAnimations(animationRefs, settings, () => {
+  const isDesktop = useIsDesktop();
+
+  const animations = usePanelAnimations(animationRefs, settings, isDesktop, () => {
     setSelectedCandidate(null);
   });
 
   const codeSnippets = useMemo(
-    () => computeCodeSnippets(settings, animations.isOpen, animations.notifVisible),
-    [settings, animations.isOpen, animations.notifVisible]
+    () =>
+      computeCodeSnippets(
+        settings,
+        animations.isOpen,
+        animations.notifVisible,
+        animations.actionPanelOpen
+      ),
+    [settings, animations.isOpen, animations.notifVisible, animations.actionPanelOpen]
   );
 
   useEffect(() => {
@@ -170,7 +181,9 @@ export function WinstonScene() {
         jobListOpen={animations.jobListOpen}
         candidateAppOpen={animations.candidateAppOpen}
         contactCardOpen={animations.contactCardOpen}
+        actionPanelOpen={animations.actionPanelOpen}
         headerMode={animations.headerMode}
+        isDesktop={isDesktop}
         onToggle={animations.toggle}
         onToggleMenu={animations.toggleMenu}
         onMenuAction={handleMenuAction}
@@ -184,6 +197,7 @@ export function WinstonScene() {
         onOpenCandidate={handleOpenCandidate}
         menuRef={menuRef}
         menuBtnRef={menuBtnRef}
+        actionColRef={actionColRef}
         jobListLayerRef={jobListLayerRef}
         candidateAppLayerRef={candidateAppLayerRef}
         contactCardLayerRef={contactCardLayerRef}

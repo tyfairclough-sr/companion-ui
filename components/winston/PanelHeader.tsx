@@ -28,6 +28,7 @@ type HeaderMode = keyof typeof TITLES;
 interface PanelHeaderProps {
   headerMode: HeaderMode;
   canReturnToChat: boolean;
+  isDesktop: boolean;
   onToggle: () => void;
   onToggleMenu: (e?: React.MouseEvent) => void;
   onMenuAction: (action: "reset" | "history") => void;
@@ -48,6 +49,7 @@ const HEADER_DURATION = 0.28;
 export function PanelHeader({
   headerMode,
   canReturnToChat,
+  isDesktop,
   onToggle,
   onToggleMenu,
   onMenuAction,
@@ -76,12 +78,44 @@ export function PanelHeader({
   const initializedRef = useRef(false);
   const returnInitializedRef = useRef(false);
 
+  const effectiveHeaderMode = isDesktop ? "default" : headerMode;
+  const effectiveCanReturnToChat = isDesktop ? false : canReturnToChat;
+
   useEffect(() => {
+    if (!isDesktop) return;
+
+    const backWrap = backWrapRef.current;
+    const back = backRef.current;
+    const returnWrap = returnWrapRef.current;
+    const returnBtn = returnRef.current;
+
+    if (backWrap && back) {
+      gsap.set(backWrap, { width: 0, marginRight: 0 });
+      gsap.set(back, { autoAlpha: 0, x: -10 });
+    }
+    if (returnWrap && returnBtn) {
+      gsap.set(returnWrap, { width: 0, marginRight: 0 });
+      gsap.set(returnBtn, { autoAlpha: 0, x: -10 });
+    }
+
+    (Object.keys(TITLES) as HeaderMode[]).forEach((mode) => {
+      const el = titleRefByMode[mode].current;
+      if (el) {
+        gsap.set(el, { autoAlpha: mode === "default" ? 1 : 0 });
+      }
+    });
+
+    prevModeRef.current = "default";
+  }, [isDesktop]);
+
+  useEffect(() => {
+    if (isDesktop) return;
+
     const backWrap = backWrapRef.current;
     const back = backRef.current;
     if (!backWrap || !back) return;
 
-    const showBack = headerMode !== "default";
+    const showBack = effectiveHeaderMode !== "default";
 
     if (!initializedRef.current) {
       initializedRef.current = true;
@@ -93,17 +127,17 @@ export function PanelHeader({
       (Object.keys(TITLES) as HeaderMode[]).forEach((mode) => {
         const el = titleRefByMode[mode].current;
         if (el) {
-          gsap.set(el, { autoAlpha: mode === headerMode ? 1 : 0 });
+          gsap.set(el, { autoAlpha: mode === effectiveHeaderMode ? 1 : 0 });
         }
       });
-      prevModeRef.current = headerMode;
+      prevModeRef.current = effectiveHeaderMode;
       return;
     }
 
-    if (prevModeRef.current === headerMode) return;
+    if (prevModeRef.current === effectiveHeaderMode) return;
 
     const from = prevModeRef.current;
-    const to = headerMode;
+    const to = effectiveHeaderMode;
     const tl = gsap.timeline();
 
     const outTitle = titleRefByMode[from].current;
@@ -148,10 +182,12 @@ export function PanelHeader({
       );
     }
 
-    prevModeRef.current = headerMode;
-  }, [headerMode]);
+    prevModeRef.current = effectiveHeaderMode;
+  }, [effectiveHeaderMode, isDesktop]);
 
   useEffect(() => {
+    if (isDesktop) return;
+
     const returnWrap = returnWrapRef.current;
     const returnBtn = returnRef.current;
     if (!returnWrap || !returnBtn) return;
@@ -159,15 +195,15 @@ export function PanelHeader({
     if (!returnInitializedRef.current) {
       returnInitializedRef.current = true;
       gsap.set(returnWrap, {
-        width: canReturnToChat ? RETURN_WRAP_WIDTH : 0,
-        marginRight: canReturnToChat ? RETURN_WRAP_GAP : 0,
+        width: effectiveCanReturnToChat ? RETURN_WRAP_WIDTH : 0,
+        marginRight: effectiveCanReturnToChat ? RETURN_WRAP_GAP : 0,
       });
-      gsap.set(returnBtn, { autoAlpha: canReturnToChat ? 1 : 0, x: canReturnToChat ? 0 : -10 });
+      gsap.set(returnBtn, { autoAlpha: effectiveCanReturnToChat ? 1 : 0, x: effectiveCanReturnToChat ? 0 : -10 });
       return;
     }
 
     const tl = gsap.timeline();
-    if (canReturnToChat) {
+    if (effectiveCanReturnToChat) {
       gsap.set(returnBtn, { autoAlpha: 0, x: -10 });
       tl.to(
         returnWrap,
@@ -191,7 +227,7 @@ export function PanelHeader({
         0
       );
     }
-  }, [canReturnToChat]);
+  }, [effectiveCanReturnToChat, isDesktop]);
 
   return (
     <div className="panel-header">
@@ -202,8 +238,8 @@ export function PanelHeader({
             className="panel-header-return"
             type="button"
             aria-label="Back to chat"
-            aria-hidden={!canReturnToChat}
-            tabIndex={canReturnToChat ? 0 : -1}
+            aria-hidden={!effectiveCanReturnToChat}
+            tabIndex={effectiveCanReturnToChat ? 0 : -1}
             onClick={onReturnToChat}
           >
             {returnBtnSvg}
@@ -215,12 +251,12 @@ export function PanelHeader({
             className="panel-header-back"
             type="button"
             aria-label="Back"
-            aria-hidden={headerMode === "default"}
-            tabIndex={headerMode === "default" ? -1 : 0}
+            aria-hidden={effectiveHeaderMode === "default"}
+            tabIndex={effectiveHeaderMode === "default" ? -1 : 0}
             onClick={
-              headerMode === "contact"
+              effectiveHeaderMode === "contact"
                 ? onCloseContactCard
-                : headerMode === "candidate"
+                : effectiveHeaderMode === "candidate"
                 ? onCloseCandidateApp
                 : onCloseJobList
             }
@@ -232,28 +268,28 @@ export function PanelHeader({
           <span
             ref={defaultTitleRef}
             className="panel-title panel-title-item"
-            aria-hidden={headerMode !== "default"}
+            aria-hidden={effectiveHeaderMode !== "default"}
           >
             {TITLES.default}
           </span>
           <span
             ref={jobListTitleRef}
             className="panel-title panel-title-item"
-            aria-hidden={headerMode !== "jobList"}
+            aria-hidden={effectiveHeaderMode !== "jobList"}
           >
             {TITLES.jobList}
           </span>
           <span
             ref={candidateTitleRef}
             className="panel-title panel-title-item"
-            aria-hidden={headerMode !== "candidate"}
+            aria-hidden={effectiveHeaderMode !== "candidate"}
           >
             {TITLES.candidate}
           </span>
           <span
             ref={contactTitleRef}
             className="panel-title panel-title-item"
-            aria-hidden={headerMode !== "contact"}
+            aria-hidden={effectiveHeaderMode !== "contact"}
           >
             {TITLES.contact}
           </span>

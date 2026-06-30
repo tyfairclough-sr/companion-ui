@@ -11,6 +11,7 @@ import { JobListLayer } from "./JobListLayer";
 import { CandidateAppLayer } from "./CandidateAppLayer";
 import { ContactCardLayer } from "./ContactCardLayer";
 import { PanelHeader } from "./PanelHeader";
+import { ActionPanelHeader } from "./ActionPanelHeader";
 import { CompanionCardSkeleton, SuggestionChipSkeleton, QuickRepliesSkeleton } from "./skeletons/LayerSkeletons";
 
 interface WinstonPanelProps {
@@ -20,7 +21,9 @@ interface WinstonPanelProps {
   jobListOpen: boolean;
   candidateAppOpen: boolean;
   contactCardOpen: boolean;
+  actionPanelOpen: boolean;
   headerMode: "default" | "jobList" | "candidate" | "contact";
+  isDesktop: boolean;
   onToggle: () => void;
   onToggleMenu: (e?: React.MouseEvent) => void;
   onMenuAction: (action: "reset" | "history") => void;
@@ -34,6 +37,7 @@ interface WinstonPanelProps {
   onOpenCandidate: (id: string) => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
   menuBtnRef: React.RefObject<HTMLDivElement | null>;
+  actionColRef: React.RefObject<HTMLDivElement | null>;
   jobListLayerRef: React.RefObject<HTMLDivElement | null>;
   candidateAppLayerRef: React.RefObject<HTMLDivElement | null>;
   contactCardLayerRef: React.RefObject<HTMLDivElement | null>;
@@ -48,7 +52,9 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       jobListOpen,
       candidateAppOpen,
       contactCardOpen,
+      actionPanelOpen,
       headerMode,
+      isDesktop,
       onToggle,
       onToggleMenu,
       onMenuAction,
@@ -62,6 +68,7 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       onOpenCandidate,
       menuRef,
       menuBtnRef,
+      actionColRef,
       jobListLayerRef,
       candidateAppLayerRef,
       contactCardLayerRef,
@@ -129,79 +136,102 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     const canReturnToChat =
       [jobListOpen, candidateAppOpen, contactCardOpen].filter(Boolean).length > 1;
 
-    return (
-      <div className="panel" ref={ref}>
-        <PanelHeader
-          headerMode={headerMode}
-          canReturnToChat={canReturnToChat}
-          onToggle={onToggle}
-          onToggleMenu={onToggleMenu}
-          onMenuAction={onMenuAction}
-          onCloseJobList={onCloseJobList}
-          onCloseCandidateApp={onCloseCandidateApp}
-          onCloseContactCard={onCloseContactCard}
-          onReturnToChat={onReturnToChat}
-          menuRef={menuRef}
-          menuBtnRef={menuBtnRef}
-        />
+    const showActionColumn = actionPanelOpen;
 
-        <div className="panel-body-wrap">
-          <div className="panel-body" ref={bodyRef}>
-            {chatStreamLoading ? (
-              <SuggestionChipSkeleton />
-            ) : (
-              <div className="suggestion-chip">show my Sales Executive job</div>
-            )}
-            {chatStreamLoading ? null : (
-              <AiReply>
-                Sure thing Ali, you have this job that is currently in the hiring stage.
-              </AiReply>
-            )}
-            {chatStreamLoading ? (
-              <CompanionCardSkeleton />
-            ) : job ? (
-              <CompanionCard
-                job={job}
+    return (
+      <div className={`panel${isDesktop ? " panel--desktop" : ""}${actionPanelOpen && isDesktop ? " panel--extended" : ""}`} ref={ref}>
+        <div className="panel-columns">
+          <div className="panel-chat-col">
+            <PanelHeader
+              headerMode={headerMode}
+              canReturnToChat={canReturnToChat}
+              isDesktop={isDesktop}
+              onToggle={onToggle}
+              onToggleMenu={onToggleMenu}
+              onMenuAction={onMenuAction}
+              onCloseJobList={onCloseJobList}
+              onCloseCandidateApp={onCloseCandidateApp}
+              onCloseContactCard={onCloseContactCard}
+              onReturnToChat={onReturnToChat}
+              menuRef={menuRef}
+              menuBtnRef={menuBtnRef}
+            />
+
+            <div className="panel-body-wrap">
+              <div className="panel-body" ref={bodyRef}>
+                {chatStreamLoading ? (
+                  <SuggestionChipSkeleton />
+                ) : (
+                  <div className="suggestion-chip">show my Sales Executive job</div>
+                )}
+                {chatStreamLoading ? null : (
+                  <AiReply>
+                    Sure thing Ali, you have this job that is currently in the hiring stage.
+                  </AiReply>
+                )}
+                {chatStreamLoading ? (
+                  <CompanionCardSkeleton />
+                ) : job ? (
+                  <CompanionCard
+                    job={job}
+                    onToggleSelect={onToggleSelect}
+                    onOpenMore={onOpenJobList}
+                    onOpenCandidate={onOpenCandidate}
+                    onScheduleSelected={handleScheduleSelected}
+                  />
+                ) : null}
+                {chatStreamLoading ? (
+                  <QuickRepliesSkeleton />
+                ) : (
+                  <QuickReplies onSelect={handleQuickReply} disabled={quickRepliesUsed} />
+                )}
+                {sentMessages.map((message, index) => (
+                  <div className="suggestion-chip" key={index}>
+                    {message}
+                  </div>
+                ))}
+                {scheduling ? <ChatLoading /> : null}
+              </div>
+            </div>
+          </div>
+
+          <div className={`panel-action-col${showActionColumn ? " panel-action-col--visible" : ""}`} ref={actionColRef}>
+            {isDesktop ? (
+              <ActionPanelHeader
+                headerMode={headerMode}
+                visible={actionPanelOpen}
+                canReturnToChat={canReturnToChat}
+                onCloseJobList={onCloseJobList}
+                onCloseCandidateApp={onCloseCandidateApp}
+                onCloseContactCard={onCloseContactCard}
+                onReturnToChat={onReturnToChat}
+              />
+            ) : null}
+
+            <div className="panel-action-body">
+              <JobListLayer
+                ref={jobListLayerRef}
+                candidates={allCandidates}
+                isOpen={jobListOpen}
                 onToggleSelect={onToggleSelect}
-                onOpenMore={onOpenJobList}
                 onOpenCandidate={onOpenCandidate}
                 onScheduleSelected={handleScheduleSelected}
               />
-            ) : null}
-            {chatStreamLoading ? (
-              <QuickRepliesSkeleton />
-            ) : (
-              <QuickReplies onSelect={handleQuickReply} disabled={quickRepliesUsed} />
-            )}
-            {sentMessages.map((message, index) => (
-              <div className="suggestion-chip" key={index}>
-                {message}
-              </div>
-            ))}
-            {scheduling ? <ChatLoading /> : null}
+
+              <CandidateAppLayer
+                ref={candidateAppLayerRef}
+                candidate={selectedCandidate}
+                isOpen={candidateAppOpen}
+                onContact={onOpenContactCard}
+              />
+
+              <ContactCardLayer
+                ref={contactCardLayerRef}
+                candidate={selectedCandidate}
+                isOpen={contactCardOpen}
+              />
+            </div>
           </div>
-
-          <JobListLayer
-            ref={jobListLayerRef}
-            candidates={allCandidates}
-            isOpen={jobListOpen}
-            onToggleSelect={onToggleSelect}
-            onOpenCandidate={onOpenCandidate}
-            onScheduleSelected={handleScheduleSelected}
-          />
-
-          <CandidateAppLayer
-            ref={candidateAppLayerRef}
-            candidate={selectedCandidate}
-            isOpen={candidateAppOpen}
-            onContact={onOpenContactCard}
-          />
-
-          <ContactCardLayer
-            ref={contactCardLayerRef}
-            candidate={selectedCandidate}
-            isOpen={contactCardOpen}
-          />
         </div>
 
         <div className="panel-footer">
