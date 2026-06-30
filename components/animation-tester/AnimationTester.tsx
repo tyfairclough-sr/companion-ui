@@ -13,6 +13,7 @@ const EASE_OPTIONS = [
   { value: "expo", label: "Expo (snappy)" },
   { value: "circ", label: "Circ" },
   { value: "sine", label: "Sine (gentle)" },
+  { value: "easein", label: "Ease-in (simple)" },
   { value: "none", label: "None (linear)" },
 ];
 
@@ -20,7 +21,7 @@ interface AnimationTesterProps {
   isOpen: boolean;
   notifVisible: boolean;
   settings: AnimationSettings;
-  codeSnippets: { avatar: string; notif: string; panel: string };
+  codeSnippets: { avatar: string; notif: string; panel: string; actionPanel: string };
   onTogglePanel: () => void;
   onTriggerNotif: () => void;
   onSettingsChange: (patch: Partial<AnimationSettings>) => void;
@@ -178,6 +179,17 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
         )}
 
         {card(
+          "action",
+          "Action panel",
+          "#9b59b6",
+          <>
+            {variantSelect("apV", "Variant")}
+            {slider("apD", "Duration", 100, 2000, 50)}
+            {slider("apDel", "Delay", 0, 1500, 50)}
+          </>
+        )}
+
+        {card(
           "css",
           "CSS — last animation",
           "#aaa",
@@ -188,6 +200,8 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
             <div className="css-block">{codeSnippets.notif}</div>
             <div className="css-block-label">Panel</div>
             <div className="css-block">{codeSnippets.panel}</div>
+            <div className="css-block-label">Action panel</div>
+            <div className="css-block">{codeSnippets.actionPanel}</div>
           </>
         )}
 

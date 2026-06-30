@@ -9,16 +9,24 @@ import {
   CANDIDATE_SLIDE,
   CONTACT_CARD_SLIDE,
   JOB_LIST_SLIDE,
+  PANEL_EXTENDED_WIDTH,
   PANEL_HIDE_X,
+  PANEL_WIDTH,
   easeFor,
 } from "@/lib/animation";
 
 gsap.registerPlugin(useGSAP);
 
+// Content layers (job list / candidate / contact) keep their original slide
+// timing; only the action-panel container is driven by the tester settings.
+const LAYER_OPEN_DURATION = 0.35;
+const LAYER_CLOSE_DURATION = 0.3;
+
 interface PanelAnimationRefs {
   avatarRef: React.RefObject<HTMLDivElement | null>;
   notifRef: React.RefObject<SVGSVGElement | null>;
   panelRef: React.RefObject<HTMLDivElement | null>;
+  actionColRef: React.RefObject<HTMLDivElement | null>;
   jobListLayerRef: React.RefObject<HTMLDivElement | null>;
   candidateAppLayerRef: React.RefObject<HTMLDivElement | null>;
   contactCardLayerRef: React.RefObject<HTMLDivElement | null>;
@@ -29,6 +37,7 @@ interface PanelAnimationRefs {
 export function usePanelAnimations(
   refs: PanelAnimationRefs,
   settings: AnimationSettings,
+  isDesktop: boolean,
   onPanelClose?: () => void
 ) {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,6 +51,75 @@ export function usePanelAnimations(
 
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
+
+  const isDesktopRef = useRef(isDesktop);
+  isDesktopRef.current = isDesktop;
+
+  // Mirror the latest settings into a ref so the memoized animation callbacks
+  // can read current action-panel timing/easing without changing identity.
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  // Action-panel open/close timing and easing, driven by the tester settings.
+  const actionPanelTween = useCallback((dir: "show" | "hide") => {
+    const s = settingsRef.current;
+    return {
+      duration: s.apD / 1000,
+      delay: dir === "show" ? s.apDel / 1000 : 0,
+      ease: easeFor(s.apV, dir),
+    };
+  }, []);
+
+  const actionPanelOpen = jobListOpen || candidateAppOpen || contactCardOpen;
+
+  const getPanelHideX = useCallback(() => {
+    const { panelRef } = refs;
+    if (panelRef.current) {
+      return Math.max(PANEL_HIDE_X, panelRef.current.offsetWidth + 20);
+    }
+    return PANEL_HIDE_X;
+  }, [refs]);
+
+  const expandActionPanel = useCallback(() => {
+    const { panelRef, actionColRef } = refs;
+    if (!isDesktopRef.current || !panelRef.current) return;
+    const { duration, delay, ease } = actionPanelTween("show");
+    gsap.killTweensOf(panelRef.current, "width");
+    gsap.to(panelRef.current, {
+      width: PANEL_EXTENDED_WIDTH,
+      duration,
+      delay,
+      ease,
+    });
+    if (actionColRef.current) {
+      gsap.killTweensOf(actionColRef.current);
+      gsap.to(actionColRef.current, { autoAlpha: 1, duration, delay, ease });
+    }
+  }, [actionPanelTween, refs]);
+
+  const collapseActionPanel = useCallback(
+    (instant = false) => {
+      const { panelRef, actionColRef } = refs;
+      if (!isDesktopRef.current || !panelRef.current) return;
+      gsap.killTweensOf(panelRef.current, "width");
+      if (actionColRef.current) gsap.killTweensOf(actionColRef.current);
+      if (instant) {
+        gsap.set(panelRef.current, { width: PANEL_WIDTH });
+        if (actionColRef.current) gsap.set(actionColRef.current, { autoAlpha: 0 });
+        return;
+      }
+      const { duration, ease } = actionPanelTween("hide");
+      gsap.to(panelRef.current, {
+        width: PANEL_WIDTH,
+        duration,
+        ease,
+      });
+      if (actionColRef.current) {
+        gsap.to(actionColRef.current, { autoAlpha: 0, duration, ease });
+      }
+    },
+    [actionPanelTween, refs]
+  );
 
   useGSAP(
     () => {
@@ -57,9 +135,12 @@ export function usePanelAnimations(
         return;
       }
 
-      gsap.set(panelRef.current, { x: PANEL_HIDE_X, autoAlpha: 0 });
+      gsap.set(panelRef.current, { x: PANEL_HIDE_X, autoAlpha: 0, width: PANEL_WIDTH });
       gsap.set(avatarRef.current, { x: 0, autoAlpha: 1 });
       gsap.set(notifRef.current, { scale: 0, autoAlpha: 0, transformOrigin: "50% 50%" });
+      if (isDesktopRef.current && refs.actionColRef.current) {
+        gsap.set(refs.actionColRef.current, { autoAlpha: 0 });
+      }
       gsap.set(jobListLayerRef.current, { x: JOB_LIST_SLIDE });
       gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
       gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
@@ -117,7 +198,8 @@ export function usePanelAnimations(
     if (contactCardLayerRef.current) {
       gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
     }
-  }, [refs]);
+    collapseActionPanel(true);
+  }, [collapseActionPanel, refs]);
 
   const toggle = useCallback(() => {
     const { avatarRef, notifRef, panelRef } = refs;
@@ -131,6 +213,7 @@ export function usePanelAnimations(
     const ntDelay = settings.ntDel / 1000;
     const pnDur = settings.pnD / 1000;
     const pnDelay = settings.pnDel / 1000;
+    const hideX = getPanelHideX();
 
     const tl = gsap.timeline({
       onComplete: () => setAnimating(false),
@@ -164,7 +247,7 @@ export function usePanelAnimations(
         setNotifVisible(false);
       }
 
-      gsap.set(panelRef.current, { autoAlpha: 1 });
+      gsap.set(panelRef.current, { autoAlpha: 1, width: PANEL_WIDTH });
       tl.to(
         panelRef.current,
         {
@@ -182,12 +265,14 @@ export function usePanelAnimations(
       tl.to(
         panelRef.current,
         {
-          x: PANEL_HIDE_X,
+          x: hideX,
           duration: pnDur,
           delay: pnDelay,
           ease: easeFor(settings.pnV, "hide"),
           onComplete: () => {
-            if (panelRef.current) gsap.set(panelRef.current, { autoAlpha: 0 });
+            if (panelRef.current) {
+              gsap.set(panelRef.current, { autoAlpha: 0, width: PANEL_WIDTH });
+            }
           },
         },
         0
@@ -210,7 +295,7 @@ export function usePanelAnimations(
       resetLayers();
       onPanelClose?.();
     }
-  }, [animating, closeMenu, notifVisible, onPanelClose, refs, resetLayers, settings]);
+  }, [animating, closeMenu, getPanelHideX, notifVisible, onPanelClose, refs, resetLayers, settings]);
 
   const triggerNotif = useCallback(() => {
     const { notifRef } = refs;
@@ -244,6 +329,8 @@ export function usePanelAnimations(
     const { jobListLayerRef, candidateAppLayerRef } = refs;
     if (jobListOpen || !jobListLayerRef.current) return;
 
+    const wasActionPanelOpen = candidateAppOpen || contactCardOpen;
+
     if (candidateAppOpen && candidateAppLayerRef.current) {
       gsap.killTweensOf(candidateAppLayerRef.current);
       gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
@@ -253,10 +340,14 @@ export function usePanelAnimations(
     setJobListOpen(true);
     setHeaderMode("jobList");
 
+    if (isDesktopRef.current && !wasActionPanelOpen) {
+      expandActionPanel();
+    }
+
     gsap.killTweensOf(jobListLayerRef.current);
     gsap.set(jobListLayerRef.current, { x: JOB_LIST_SLIDE });
-    gsap.to(jobListLayerRef.current, { x: 0, duration: 0.35, ease: "power2.out" });
-  }, [candidateAppOpen, jobListOpen, refs]);
+    gsap.to(jobListLayerRef.current, { x: 0, duration: LAYER_OPEN_DURATION, ease: "power2.out" });
+  }, [candidateAppOpen, contactCardOpen, expandActionPanel, jobListOpen, refs]);
 
   const closeJobList = useCallback(() => {
     const { jobListLayerRef, candidateAppLayerRef } = refs;
@@ -271,25 +362,35 @@ export function usePanelAnimations(
     setJobListOpen(false);
     setHeaderMode("default");
 
+    if (isDesktopRef.current && !contactCardOpen) {
+      collapseActionPanel();
+    }
+
     gsap.killTweensOf(jobListLayerRef.current);
     gsap.to(jobListLayerRef.current, {
       x: JOB_LIST_SLIDE,
-      duration: 0.3,
+      duration: LAYER_CLOSE_DURATION,
       ease: "power2.in",
     });
-  }, [candidateAppOpen, jobListOpen, refs]);
+  }, [candidateAppOpen, collapseActionPanel, contactCardOpen, jobListOpen, refs]);
 
   const openCandidateApp = useCallback(() => {
     const { candidateAppLayerRef } = refs;
     if (candidateAppOpen || !candidateAppLayerRef.current) return;
 
+    const wasActionPanelOpen = jobListOpen || contactCardOpen;
+
     setCandidateAppOpen(true);
     setHeaderMode("candidate");
 
+    if (isDesktopRef.current && !wasActionPanelOpen) {
+      expandActionPanel();
+    }
+
     gsap.killTweensOf(candidateAppLayerRef.current);
     gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
-    gsap.to(candidateAppLayerRef.current, { x: 0, duration: 0.35, ease: "power2.out" });
-  }, [candidateAppOpen, refs]);
+    gsap.to(candidateAppLayerRef.current, { x: 0, duration: LAYER_OPEN_DURATION, ease: "power2.out" });
+  }, [candidateAppOpen, contactCardOpen, expandActionPanel, jobListOpen, refs]);
 
   const closeCandidateApp = useCallback(
     (instant = false) => {
@@ -299,6 +400,10 @@ export function usePanelAnimations(
       setCandidateAppOpen(false);
       setHeaderMode(jobListOpen ? "jobList" : "default");
 
+      if (isDesktopRef.current && !jobListOpen && !contactCardOpen) {
+        collapseActionPanel(instant);
+      }
+
       gsap.killTweensOf(candidateAppLayerRef.current);
       if (instant) {
         gsap.set(candidateAppLayerRef.current, { x: CANDIDATE_SLIDE });
@@ -307,24 +412,30 @@ export function usePanelAnimations(
 
       gsap.to(candidateAppLayerRef.current, {
         x: CANDIDATE_SLIDE,
-        duration: 0.3,
+        duration: LAYER_CLOSE_DURATION,
         ease: "power2.in",
       });
     },
-    [candidateAppOpen, jobListOpen, refs]
+    [candidateAppOpen, collapseActionPanel, contactCardOpen, jobListOpen, refs]
   );
 
   const openContactCard = useCallback(() => {
     const { contactCardLayerRef } = refs;
     if (contactCardOpen || !contactCardLayerRef.current) return;
 
+    const wasActionPanelOpen = jobListOpen || candidateAppOpen;
+
     setContactCardOpen(true);
     setHeaderMode("contact");
 
+    if (isDesktopRef.current && !wasActionPanelOpen) {
+      expandActionPanel();
+    }
+
     gsap.killTweensOf(contactCardLayerRef.current);
     gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
-    gsap.to(contactCardLayerRef.current, { x: 0, duration: 0.35, ease: "power2.out" });
-  }, [contactCardOpen, refs]);
+    gsap.to(contactCardLayerRef.current, { x: 0, duration: LAYER_OPEN_DURATION, ease: "power2.out" });
+  }, [candidateAppOpen, contactCardOpen, expandActionPanel, jobListOpen, refs]);
 
   const closeContactCard = useCallback(
     (instant = false) => {
@@ -334,6 +445,10 @@ export function usePanelAnimations(
       setContactCardOpen(false);
       setHeaderMode(candidateAppOpen ? "candidate" : jobListOpen ? "jobList" : "default");
 
+      if (isDesktopRef.current && !jobListOpen && !candidateAppOpen) {
+        collapseActionPanel(instant);
+      }
+
       gsap.killTweensOf(contactCardLayerRef.current);
       if (instant) {
         gsap.set(contactCardLayerRef.current, { x: CONTACT_CARD_SLIDE });
@@ -342,11 +457,11 @@ export function usePanelAnimations(
 
       gsap.to(contactCardLayerRef.current, {
         x: CONTACT_CARD_SLIDE,
-        duration: 0.3,
+        duration: LAYER_CLOSE_DURATION,
         ease: "power2.in",
       });
     },
-    [candidateAppOpen, contactCardOpen, jobListOpen, refs]
+    [candidateAppOpen, collapseActionPanel, contactCardOpen, jobListOpen, refs]
   );
 
   const returnToChat = useCallback(() => {
@@ -356,7 +471,7 @@ export function usePanelAnimations(
       gsap.killTweensOf(contactCardLayerRef.current);
       gsap.to(contactCardLayerRef.current, {
         x: CONTACT_CARD_SLIDE,
-        duration: 0.3,
+        duration: LAYER_CLOSE_DURATION,
         ease: "power2.in",
       });
       setContactCardOpen(false);
@@ -366,7 +481,7 @@ export function usePanelAnimations(
       gsap.killTweensOf(candidateAppLayerRef.current);
       gsap.to(candidateAppLayerRef.current, {
         x: CANDIDATE_SLIDE,
-        duration: 0.3,
+        duration: LAYER_CLOSE_DURATION,
         ease: "power2.in",
       });
       setCandidateAppOpen(false);
@@ -376,14 +491,47 @@ export function usePanelAnimations(
       gsap.killTweensOf(jobListLayerRef.current);
       gsap.to(jobListLayerRef.current, {
         x: JOB_LIST_SLIDE,
-        duration: 0.3,
+        duration: LAYER_CLOSE_DURATION,
         ease: "power2.in",
       });
       setJobListOpen(false);
     }
 
     setHeaderMode("default");
-  }, [candidateAppOpen, contactCardOpen, jobListOpen, refs]);
+    collapseActionPanel();
+  }, [candidateAppOpen, collapseActionPanel, contactCardOpen, jobListOpen, refs]);
+
+  // Snap the panel width and container visibility to the correct resting state
+  // only when the breakpoint changes (e.g. resize). Layer open/close is owned by
+  // the expand/collapse animations, so we must not instantly set state then —
+  // doing so would clobber the in-flight container transition.
+  const prevIsDesktopRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    const { panelRef, actionColRef } = refs;
+    if (!panelRef.current) return;
+
+    const breakpointChanged = prevIsDesktopRef.current !== isDesktop;
+    prevIsDesktopRef.current = isDesktop;
+    if (!breakpointChanged) return;
+
+    const hasOpenLayer = jobListOpen || candidateAppOpen || contactCardOpen;
+
+    if (isDesktop) {
+      gsap.set(panelRef.current, {
+        width: hasOpenLayer ? PANEL_EXTENDED_WIDTH : PANEL_WIDTH,
+      });
+      if (actionColRef.current) {
+        gsap.set(actionColRef.current, { autoAlpha: hasOpenLayer ? 1 : 0 });
+      }
+    } else {
+      gsap.set(panelRef.current, { width: PANEL_WIDTH });
+      // On mobile the container visibility is handled by CSS, so release the
+      // inline opacity/visibility GSAP may have set while on desktop.
+      if (actionColRef.current) {
+        gsap.set(actionColRef.current, { clearProps: "opacity,visibility" });
+      }
+    }
+  }, [isDesktop, jobListOpen, candidateAppOpen, contactCardOpen, refs]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -408,6 +556,7 @@ export function usePanelAnimations(
     jobListOpen,
     candidateAppOpen,
     contactCardOpen,
+    actionPanelOpen,
     menuOpen,
     headerMode,
     toggle,

@@ -7,6 +7,7 @@ export const EASE = {
   expo: { show: "expo.out", hide: "expo.in" },
   circ: { show: "circ.out", hide: "circ.in" },
   sine: { show: "sine.out", hide: "sine.in" },
+  easein: { show: "power1.in", hide: "power1.out" },
   none: { show: "none", hide: "none" },
 } as const;
 
@@ -19,9 +20,12 @@ export function easeFor(variant: string, dir: "show" | "hide"): string {
 
 export const PANEL_HIDE_X = 500;
 export const AVATAR_EXIT_X = 144;
-export const JOB_LIST_SLIDE = 420;
-export const CANDIDATE_SLIDE = 420;
-export const CONTACT_CARD_SLIDE = 420;
+export const PANEL_WIDTH = 420;
+export const ACTION_PANEL_WIDTH = 640;
+export const PANEL_EXTENDED_WIDTH = PANEL_WIDTH + ACTION_PANEL_WIDTH;
+export const JOB_LIST_SLIDE = ACTION_PANEL_WIDTH;
+export const CANDIDATE_SLIDE = ACTION_PANEL_WIDTH;
+export const CONTACT_CARD_SLIDE = ACTION_PANEL_WIDTH;
 
 // Applicant-list reveal: each row fades/slides in, staggered so the whole list
 // cascades top-to-bottom within JOB_LIST_REVEAL_STAGGER seconds.
@@ -50,6 +54,9 @@ export interface AnimationSettings {
   pnV: string;
   pnD: number;
   pnDel: number;
+  apV: string;
+  apD: number;
+  apDel: number;
 }
 
 export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
@@ -62,6 +69,9 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   pnV: "power2",
   pnD: 450,
   pnDel: 0,
+  apV: "easein",
+  apD: 250,
+  apDel: 0,
 };
 
 const DEFAULT_SETTINGS_STORAGE_KEY = "winston-animation-defaults";
