@@ -46,6 +46,7 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
   ) {
     const { openCards, toggleCard } = useAccordionCards();
     const [savedConfirm, setSavedConfirm] = useState(false);
+    const [collapsed, setCollapsed] = useState(false);
 
     useEffect(() => {
       if (!savedConfirm) return;
@@ -121,9 +122,40 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
       </div>
     );
 
+    if (collapsed) {
+      return (
+        <button
+          className="controls-reopen"
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label="Open animation tester"
+          title="Open animation tester"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 7h10M18 7h2M4 17h2M10 17h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="16" cy="7" r="2.4" stroke="currentColor" strokeWidth="2" />
+            <circle cx="8" cy="17" r="2.4" stroke="currentColor" strokeWidth="2" />
+          </svg>
+        </button>
+      );
+    }
+
     return (
       <div className="controls" ref={ref}>
-        <div className="controls-title">Animation tester</div>
+        <div className="controls-header">
+          <div className="controls-title">Animation tester</div>
+          <button
+            className="controls-close"
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label="Close animation tester"
+            title="Close"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
 
         <button
           className={`toggle-btn${isOpen ? " is-open" : ""}`}

@@ -175,6 +175,7 @@ export function WinstonScene() {
 
       <WinstonPanel
         ref={panelRef}
+        isOpen={animations.isOpen}
         job={job}
         allCandidates={allCandidates}
         selectedCandidate={selectedCandidate}

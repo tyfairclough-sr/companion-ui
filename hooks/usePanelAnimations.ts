@@ -135,7 +135,13 @@ export function usePanelAnimations(
         return;
       }
 
-      gsap.set(panelRef.current, { x: PANEL_HIDE_X, autoAlpha: 0, width: PANEL_WIDTH });
+      gsap.set(panelRef.current, { x: PANEL_HIDE_X, autoAlpha: 0 });
+      // On desktop the width is animated by the action-panel expand/collapse, so
+      // pin it explicitly. On mobile the width is owned by CSS (full-width), so
+      // leave it unset to avoid an inline style overriding the stylesheet.
+      if (isDesktopRef.current) {
+        gsap.set(panelRef.current, { width: PANEL_WIDTH });
+      }
       gsap.set(avatarRef.current, { x: 0, autoAlpha: 1 });
       gsap.set(notifRef.current, { scale: 0, autoAlpha: 0, transformOrigin: "50% 50%" });
       if (isDesktopRef.current && refs.actionColRef.current) {
@@ -524,8 +530,10 @@ export function usePanelAnimations(
         gsap.set(actionColRef.current, { autoAlpha: hasOpenLayer ? 1 : 0 });
       }
     } else {
-      gsap.set(panelRef.current, { width: PANEL_WIDTH });
-      // On mobile the container visibility is handled by CSS, so release the
+      // On mobile the width is owned by CSS (full-width), so clear any inline
+      // width GSAP set while on desktop and let the stylesheet take over.
+      gsap.set(panelRef.current, { clearProps: "width" });
+      // The container visibility is also handled by CSS on mobile, so release the
       // inline opacity/visibility GSAP may have set while on desktop.
       if (actionColRef.current) {
         gsap.set(actionColRef.current, { clearProps: "opacity,visibility" });

@@ -28,6 +28,7 @@ type HeaderMode = keyof typeof TITLES;
 interface PanelHeaderProps {
   headerMode: HeaderMode;
   canReturnToChat: boolean;
+  inverted?: boolean;
   isDesktop: boolean;
   onToggle: () => void;
   onToggleMenu: (e?: React.MouseEvent) => void;
@@ -49,6 +50,7 @@ const HEADER_DURATION = 0.28;
 export function PanelHeader({
   headerMode,
   canReturnToChat,
+  inverted = false,
   isDesktop,
   onToggle,
   onToggleMenu,
@@ -230,7 +232,7 @@ export function PanelHeader({
   }, [effectiveCanReturnToChat, isDesktop]);
 
   return (
-    <div className="panel-header">
+    <div className={`panel-header${inverted ? " panel-header--inverted" : ""}`}>
       <div className="panel-header-left">
         <div className="panel-header-return-wrap" ref={returnWrapRef}>
           <button
