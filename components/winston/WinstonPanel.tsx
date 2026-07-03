@@ -3,6 +3,7 @@
 import { forwardRef, useState, useRef, useEffect } from "react";
 import { JobPostingResponse, CandidateDetailResponse, JobPostingCandidate } from "@/lib/types";
 import { useSkeletonReveal } from "@/hooks/useSkeletonReveal";
+import { useSheetSnap } from "@/hooks/useSheetSnap";
 import { CompanionCard } from "./CompanionCard";
 import { AiReply } from "./AiReply";
 import { ChatLoading } from "./ChatLoading";
@@ -86,14 +87,25 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     const [scheduling, setScheduling] = useState(false);
     const [selectionDisabled, setSelectionDisabled] = useState(false);
 
-    // Mobile-only slide-up sheet: while a non-chat layer is open the user's most
-    // recent utterance and the bot's reply surface in a collapsible sheet in the
-    // footer instead of sliding the whole chat stream back into view.
-    const [sheetOpen, setSheetOpen] = useState(false);
+    // Mobile-only slide-up sheet: three snap states (collapsed, peek, full history).
     const [latestExchange, setLatestExchange] = useState<
       { prompt: string; reply: string | null } | null
     >(null);
     const sheetReplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const sheetBodyRef = useRef<HTMLDivElement>(null);
+    const {
+      snap: sheetSnap,
+      isDragging: sheetDragging,
+      isExpanded: sheetExpanded,
+      expandedBodyHeight,
+      footerRef: sheetFooterRef,
+      resetSnap: resetSheetSnap,
+      expandToPeek,
+      handlePointerDown: handleSheetPointerDown,
+      handlePointerMove: handleSheetPointerMove,
+      handlePointerUp: handleSheetPointerUp,
+      handlePointerCancel: handleSheetPointerCancel,
+    } = useSheetSnap();
 
     const layerOpen = jobListOpen || candidateAppOpen || contactCardOpen;
     const sheetMode = !isDesktop && layerOpen;
@@ -117,7 +129,7 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       // this exchange in the sheet (loading first, then a static reply).
       setSentMessages((prev) => [...prev, prompt]);
       setLatestExchange({ prompt, reply: null });
-      setSheetOpen(true);
+      expandToPeek();
       if (sheetReplyTimerRef.current) clearTimeout(sheetReplyTimerRef.current);
       sheetReplyTimerRef.current = setTimeout(() => {
         setLatestExchange((prev) =>
@@ -125,8 +137,6 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
         );
       }, 900);
     };
-
-    const toggleSheet = () => setSheetOpen((prev) => !prev);
 
     const handleLayerAction = (label: string) => {
       if (sheetMode) openSheet(label);
@@ -190,11 +200,16 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     // switched to desktop where the chat stream is always visible).
     useEffect(() => {
       if (!sheetMode) {
-        setSheetOpen(false);
+        resetSheetSnap();
         setLatestExchange(null);
         if (sheetReplyTimerRef.current) clearTimeout(sheetReplyTimerRef.current);
       }
-    }, [sheetMode]);
+    }, [sheetMode, resetSheetSnap]);
+
+    useEffect(() => {
+      const el = sheetBodyRef.current;
+      if (el && sheetSnap > 0) el.scrollTop = el.scrollHeight;
+    }, [sentMessages, latestExchange, scheduling, sheetSnap]);
 
     useEffect(() => {
       if (!jobListOpen) setSelectionDisabled(false);
@@ -239,6 +254,48 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       [jobListOpen, candidateAppOpen, contactCardOpen].filter(Boolean).length > 1;
 
     const showActionColumn = actionPanelOpen;
+
+    const sheetAriaLabel =
+      sheetSnap === 0
+        ? "Expand recent reply"
+        : sheetSnap === 1
+          ? "Expand full chat history"
+          : "Collapse chat sheet";
+
+    const renderSheetPeekContent = () => {
+      if (!latestExchange) return null;
+      return (
+        <>
+          <div className="suggestion-chip">{latestExchange.prompt}</div>
+          {latestExchange.reply === null ? (
+            <ChatLoading />
+          ) : (
+            <AiReply>{latestExchange.reply}</AiReply>
+          )}
+        </>
+      );
+    };
+
+    const renderSheetFullHistory = () => (
+      <>
+        {!chatStreamLoading ? (
+          <>
+            <div className="suggestion-chip">show my Sales Executive job</div>
+            <AiReply>
+              Sure thing Ali, you have this job that is currently in the hiring stage.
+            </AiReply>
+          </>
+        ) : null}
+        {sentMessages.map((message, index) => (
+          <div className="suggestion-chip" key={index}>
+            {message}
+          </div>
+        ))}
+        {latestExchange?.reply === null ? <ChatLoading /> : null}
+        {latestExchange?.reply ? <AiReply>{latestExchange.reply}</AiReply> : null}
+        {scheduling ? <ChatLoading /> : null}
+      </>
+    );
 
     return (
       <div className={`panel${isDesktop ? " panel--desktop" : ""}${actionPanelOpen && isDesktop ? " panel--extended" : ""}`} ref={ref}>
@@ -347,28 +404,44 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
           </div>
         </div>
 
-        <div className={`panel-footer${sheetMode ? " panel-footer--sheet" : ""}${sheetMode && sheetOpen ? " is-open" : ""}`}>
+        <div
+          ref={sheetFooterRef}
+          className={[
+            "panel-footer",
+            sheetMode ? "panel-footer--sheet" : "",
+            sheetMode && sheetExpanded ? "is-expanded" : "",
+            sheetMode && sheetSnap === 1 ? "is-peek" : "",
+            sheetMode && sheetSnap === 2 ? "is-full" : "",
+            sheetMode && sheetDragging ? "is-dragging" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {sheetMode ? (
             <button
               className="panel-sheet-handle"
               type="button"
-              aria-label={sheetOpen ? "Collapse recent reply" : "Expand recent reply"}
-              aria-expanded={sheetOpen}
-              onClick={toggleSheet}
+              aria-label={sheetAriaLabel}
+              aria-expanded={sheetSnap > 0}
+              onPointerDown={handleSheetPointerDown}
+              onPointerMove={handleSheetPointerMove}
+              onPointerUp={handleSheetPointerUp}
+              onPointerCancel={handleSheetPointerCancel}
             />
           ) : null}
           {sheetMode ? (
-            <div className="panel-sheet-body">
-              {latestExchange ? (
-                <>
-                  <div className="suggestion-chip">{latestExchange.prompt}</div>
-                  {latestExchange.reply === null ? (
-                    <ChatLoading />
-                  ) : (
-                    <AiReply>{latestExchange.reply}</AiReply>
-                  )}
-                </>
-              ) : null}
+            <div
+              ref={sheetBodyRef}
+              className="panel-sheet-body"
+              style={
+                sheetExpanded && (sheetDragging || sheetSnap < 2)
+                  ? { height: expandedBodyHeight, maxHeight: expandedBodyHeight }
+                  : undefined
+              }
+            >
+              {sheetSnap === 2 || (sheetDragging && expandedBodyHeight > 360)
+                ? renderSheetFullHistory()
+                : renderSheetPeekContent()}
             </div>
           ) : null}
           <div className="panel-input-row" onMouseDown={handleInputRowFocus}>
