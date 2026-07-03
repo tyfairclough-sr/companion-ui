@@ -14,10 +14,11 @@ interface CandidateAppLayerProps {
   candidate: CandidateDetailResponse | null;
   isOpen: boolean;
   onContact: () => void;
+  onAction?: (label: string) => void;
 }
 
 export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerProps>(
-  function CandidateAppLayer({ candidate, isOpen, onContact }, ref) {
+  function CandidateAppLayer({ candidate, isOpen, onContact, onAction }, ref) {
     const [profileView, setProfileView] = useState<"Profile" | "Resume">("Profile");
     const [activeTab, setActiveTab] = useState<CandidateTab>("Overview");
     const isLoading = useSkeletonReveal({
@@ -172,7 +173,7 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
         </div>
         {!isLoading && candidate ? (
           <div className="ca-floating-actions">
-            <button className="ca-action-btn" type="button">
+            <button className="ca-action-btn" type="button" onClick={() => onAction?.("Label")}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -183,7 +184,7 @@ export const CandidateAppLayer = forwardRef<HTMLDivElement, CandidateAppLayerPro
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
             </button>
-            <button className="ca-action-btn" type="button">
+            <button className="ca-action-btn" type="button" onClick={() => onAction?.("Label")}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />

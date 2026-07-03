@@ -86,6 +86,18 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     const [scheduling, setScheduling] = useState(false);
     const [selectionDisabled, setSelectionDisabled] = useState(false);
 
+    // Mobile-only slide-up sheet: while a non-chat layer is open the user's most
+    // recent utterance and the bot's reply surface in a collapsible sheet in the
+    // footer instead of sliding the whole chat stream back into view.
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [latestExchange, setLatestExchange] = useState<
+      { prompt: string; reply: string | null } | null
+    >(null);
+    const sheetReplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const layerOpen = jobListOpen || candidateAppOpen || contactCardOpen;
+    const sheetMode = !isDesktop && layerOpen;
+
     // Welcome screen: shown once per browser session (resets on refresh) and
     // dismissed when the user enters their first prompt.
     const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -100,9 +112,34 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       inputRef.current?.focus();
     };
 
+    const openSheet = (prompt: string) => {
+      // Keep the real chat history intact behind the layer, then surface just
+      // this exchange in the sheet (loading first, then a static reply).
+      setSentMessages((prev) => [...prev, prompt]);
+      setLatestExchange({ prompt, reply: null });
+      setSheetOpen(true);
+      if (sheetReplyTimerRef.current) clearTimeout(sheetReplyTimerRef.current);
+      sheetReplyTimerRef.current = setTimeout(() => {
+        setLatestExchange((prev) =>
+          prev ? { ...prev, reply: "Here's what I found based on that." } : prev
+        );
+      }, 900);
+    };
+
+    const toggleSheet = () => setSheetOpen((prev) => !prev);
+
+    const handleLayerAction = (label: string) => {
+      if (sheetMode) openSheet(label);
+    };
+
     const handleSend = () => {
       const text = inputValue.trim();
       if (!text) return;
+      if (sheetMode) {
+        openSheet(text);
+        setInputValue("");
+        return;
+      }
       setSentMessages((prev) => [...prev, text]);
       setInputValue("");
       setWelcomeDismissed(true);
@@ -123,6 +160,10 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     };
 
     const handleScheduleSelected = () => {
+      if (sheetMode) {
+        openSheet("Schedule selected");
+        return;
+      }
       const keepActionPanelOpen = isDesktop && actionPanelOpen && jobListOpen;
       setSentMessages((prev) => [...prev, "Schedule selected"]);
       if (jobListOpen && !keepActionPanelOpen) {
@@ -141,8 +182,19 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     useEffect(() => {
       return () => {
         if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
+        if (sheetReplyTimerRef.current) clearTimeout(sheetReplyTimerRef.current);
       };
     }, []);
+
+    // Collapse and clear the sheet when it no longer applies (layer closed or
+    // switched to desktop where the chat stream is always visible).
+    useEffect(() => {
+      if (!sheetMode) {
+        setSheetOpen(false);
+        setLatestExchange(null);
+        if (sheetReplyTimerRef.current) clearTimeout(sheetReplyTimerRef.current);
+      }
+    }, [sheetMode]);
 
     useEffect(() => {
       if (!jobListOpen) setSelectionDisabled(false);
@@ -283,6 +335,7 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
                 candidate={selectedCandidate}
                 isOpen={candidateAppOpen}
                 onContact={onOpenContactCard}
+                onAction={handleLayerAction}
               />
 
               <ContactCardLayer
@@ -294,7 +347,30 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
           </div>
         </div>
 
-        <div className="panel-footer">
+        <div className={`panel-footer${sheetMode ? " panel-footer--sheet" : ""}${sheetMode && sheetOpen ? " is-open" : ""}`}>
+          {sheetMode ? (
+            <button
+              className="panel-sheet-handle"
+              type="button"
+              aria-label={sheetOpen ? "Collapse recent reply" : "Expand recent reply"}
+              aria-expanded={sheetOpen}
+              onClick={toggleSheet}
+            />
+          ) : null}
+          {sheetMode ? (
+            <div className="panel-sheet-body">
+              {latestExchange ? (
+                <>
+                  <div className="suggestion-chip">{latestExchange.prompt}</div>
+                  {latestExchange.reply === null ? (
+                    <ChatLoading />
+                  ) : (
+                    <AiReply>{latestExchange.reply}</AiReply>
+                  )}
+                </>
+              ) : null}
+            </div>
+          ) : null}
           <div className="panel-input-row" onMouseDown={handleInputRowFocus}>
             <input
               ref={inputRef}

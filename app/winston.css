@@ -1230,6 +1230,53 @@ body {
   border-top: 1px solid #f0f0f0;
 }
 
+/* ── Mobile slide-up chat sheet (shown while a non-chat layer is open) ── */
+@media (max-width: 1099px) {
+  .panel-footer--sheet {
+    border-top: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06), 0 -8px 24px rgba(0, 0, 0, 0.08);
+    padding-top: 10px;
+  }
+
+  .panel-sheet-handle {
+    align-self: center;
+    width: 96px;
+    height: 5px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: #9CD2A8;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .panel-sheet-handle:hover { background: #7CC48C; }
+
+  .panel-sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.3s ease;
+  }
+
+  .panel-footer--sheet.is-open .panel-sheet-body {
+    max-height: 320px;
+    overflow-y: auto;
+    opacity: 1;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-sheet-body {
+    transition: none;
+  }
+}
+
 .panel-input-row {
   display: flex;
   align-items: center;
