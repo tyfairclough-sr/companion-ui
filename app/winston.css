@@ -1125,6 +1125,11 @@ body {
   border: solid white; border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+.cc-checkbox[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .cc-row-main { flex: 1; min-width: 0; }
 .cc-row-top {
   display: flex; align-items: center; gap: 4px;

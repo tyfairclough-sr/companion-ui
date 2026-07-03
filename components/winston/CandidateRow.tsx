@@ -18,6 +18,7 @@ const chevronSvg = (
 interface CandidateRowProps {
   candidate: JobPostingCandidate;
   rowClassName?: string;
+  selectionDisabled?: boolean;
   onToggleSelect?: (id: string, selected: boolean) => void;
   onOpen?: (id: string) => void;
   showChevron?: boolean;
@@ -26,6 +27,7 @@ interface CandidateRowProps {
 export function CandidateRow({
   candidate,
   rowClassName = "cc-row",
+  selectionDisabled = false,
   onToggleSelect,
   onOpen,
   showChevron = true,
@@ -44,18 +46,21 @@ export function CandidateRow({
         className="cc-checkbox"
         role="checkbox"
         aria-checked={candidate.selected}
+        aria-disabled={selectionDisabled || undefined}
         onClick={(e) => {
+          if (selectionDisabled) return;
           e.stopPropagation();
           onToggleSelect?.(candidate.id, !candidate.selected);
         }}
         onKeyDown={(e) => {
+          if (selectionDisabled) return;
           if (e.key === " " || e.key === "Enter") {
             e.preventDefault();
             e.stopPropagation();
             onToggleSelect?.(candidate.id, !candidate.selected);
           }
         }}
-        tabIndex={0}
+        tabIndex={selectionDisabled ? -1 : 0}
       />
       <div className="cc-row-main">
         <div className="cc-row-top">

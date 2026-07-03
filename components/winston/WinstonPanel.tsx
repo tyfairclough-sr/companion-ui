@@ -84,6 +84,7 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     const [sentMessages, setSentMessages] = useState<string[]>([]);
     const [quickRepliesUsed, setQuickRepliesUsed] = useState(false);
     const [scheduling, setScheduling] = useState(false);
+    const [selectionDisabled, setSelectionDisabled] = useState(false);
 
     // Welcome screen: shown once per browser session (resets on refresh) and
     // dismissed when the user enters their first prompt.
@@ -122,11 +123,15 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     };
 
     const handleScheduleSelected = () => {
+      const keepActionPanelOpen = isDesktop && actionPanelOpen && jobListOpen;
       setSentMessages((prev) => [...prev, "Schedule selected"]);
-      if (jobListOpen) {
+      if (jobListOpen && !keepActionPanelOpen) {
         onCloseJobList();
       } else if (candidateAppOpen) {
         onCloseCandidateApp();
+      }
+      if (keepActionPanelOpen) {
+        setSelectionDisabled(true);
       }
       if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
       setScheduling(false);
@@ -138,6 +143,10 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
         if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
       };
     }, []);
+
+    useEffect(() => {
+      if (!jobListOpen) setSelectionDisabled(false);
+    }, [jobListOpen]);
 
     useEffect(() => {
       const el = bodyRef.current;
@@ -263,6 +272,7 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
                 ref={jobListLayerRef}
                 candidates={allCandidates}
                 isOpen={jobListOpen}
+                selectionDisabled={selectionDisabled}
                 onToggleSelect={onToggleSelect}
                 onOpenCandidate={onOpenCandidate}
                 onScheduleSelected={handleScheduleSelected}

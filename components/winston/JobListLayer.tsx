@@ -17,13 +17,14 @@ gsap.registerPlugin(useGSAP);
 interface JobListLayerProps {
   candidates: JobPostingCandidate[];
   isOpen: boolean;
+  selectionDisabled?: boolean;
   onToggleSelect: (id: string, selected: boolean) => void;
   onOpenCandidate: (id: string) => void;
   onScheduleSelected: () => void;
 }
 
 export const JobListLayer = forwardRef<HTMLDivElement, JobListLayerProps>(
-  function JobListLayer({ candidates, isOpen, onToggleSelect, onOpenCandidate, onScheduleSelected }, ref) {
+  function JobListLayer({ candidates, isOpen, selectionDisabled = false, onToggleSelect, onOpenCandidate, onScheduleSelected }, ref) {
     const isLoading = useSkeletonReveal({
       enabled: isOpen,
       ready: candidates.length > 0,
@@ -70,6 +71,7 @@ export const JobListLayer = forwardRef<HTMLDivElement, JobListLayerProps>(
                 key={candidate.id}
                 candidate={candidate}
                 rowClassName="job-list-row"
+                selectionDisabled={selectionDisabled}
                 onToggleSelect={onToggleSelect}
                 onOpen={onOpenCandidate}
               />
@@ -77,7 +79,7 @@ export const JobListLayer = forwardRef<HTMLDivElement, JobListLayerProps>(
           )}
         </div>
         <div className="job-list-floating-actions">
-          <button className="job-list-action-btn" type="button" disabled={!hasSelection} onClick={onScheduleSelected}>
+          <button className="job-list-action-btn" type="button" disabled={!hasSelection || selectionDisabled} onClick={onScheduleSelected}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="3" />
               <path d="M8 12l3 3 5-6" />
