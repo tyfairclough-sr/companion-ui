@@ -581,6 +581,12 @@ body {
   }
 }
 
+/* Android Chrome: lift slideout content above the bottom browser chrome bar */
+.panel--android-chrome {
+  padding-bottom: var(--android-chrome-bottom-inset, 48px);
+  height: 100dvh;
+}
+
 /* ── Panel header ── */
 .panel-header {
   position: relative;

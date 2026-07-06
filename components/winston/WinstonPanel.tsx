@@ -2,6 +2,7 @@
 
 import { forwardRef, useState, useRef, useEffect } from "react";
 import { JobPostingResponse, CandidateDetailResponse, JobPostingCandidate } from "@/lib/types";
+import { useAndroidChromeInset } from "@/hooks/useAndroidChromeInset";
 import { useSkeletonReveal } from "@/hooks/useSkeletonReveal";
 import { useSheetSnap } from "@/hooks/useSheetSnap";
 import { CompanionCard } from "./CompanionCard";
@@ -80,6 +81,7 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     ref
   ) {
     const chatStreamLoading = useSkeletonReveal({ ready: !!job });
+    const { isAndroidChromeBrowser, bottomInsetPx } = useAndroidChromeInset();
 
     const [inputValue, setInputValue] = useState("");
     const [sentMessages, setSentMessages] = useState<string[]>([]);
@@ -220,75 +222,6 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       if (el) el.scrollTop = el.scrollHeight;
     }, [sentMessages, scheduling]);
 
-    // #region agent log
-    useEffect(() => {
-      if (!isOpen || isDesktop) return;
-
-      const logViewport = (trigger: string) => {
-        const panel = (ref as React.RefObject<HTMLDivElement>)?.current;
-        const footer = sheetFooterRef.current;
-        const inputRow = footer?.querySelector(".panel-input-row") as HTMLElement | null;
-        const vv = window.visualViewport;
-        const footerRect = footer?.getBoundingClientRect();
-        const inputRect = inputRow?.getBoundingClientRect();
-        const panelRect = panel?.getBoundingClientRect();
-        const panelCs = panel ? getComputedStyle(panel) : null;
-        const footerCs = footer ? getComputedStyle(footer) : null;
-
-        const probe = document.createElement("div");
-        probe.style.cssText = "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom)";
-        document.body.appendChild(probe);
-        const safeAreaBottom = getComputedStyle(probe).paddingBottom;
-        document.body.removeChild(probe);
-
-        const visibleBottom = vv ? vv.height + vv.offsetTop : window.innerHeight;
-        const footerBottom = footerRect?.bottom ?? 0;
-        const inputBottom = inputRect?.bottom ?? 0;
-
-        fetch("/api/debug-log", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: "8f4e86",
-            runId: "initial",
-            hypothesisId: "A,B,C,D,E",
-            location: "WinstonPanel.tsx:viewport",
-            message: "mobile footer viewport metrics",
-            data: {
-              trigger,
-              innerHeight: window.innerHeight,
-              screenHeight: window.screen.height,
-              vvHeight: vv?.height ?? null,
-              vvOffsetTop: vv?.offsetTop ?? null,
-              visibleBottom,
-              panelHeight: panelCs?.height ?? null,
-              panelBottom: panelRect?.bottom ?? null,
-              footerBottom,
-              inputBottom,
-              footerObscuredPx: Math.round((footerBottom - visibleBottom) * 10) / 10,
-              inputObscuredPx: Math.round((inputBottom - visibleBottom) * 10) / 10,
-              footerPaddingBottom: footerCs?.paddingBottom ?? null,
-              safeAreaInsetBottom: safeAreaBottom,
-              sheetMode,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-      };
-
-      logViewport("mount");
-      const t = setTimeout(() => logViewport("delayed-600ms"), 600);
-      const onVvChange = () => logViewport("visualViewport-change");
-      window.visualViewport?.addEventListener("resize", onVvChange);
-      window.visualViewport?.addEventListener("scroll", onVvChange);
-      return () => {
-        clearTimeout(t);
-        window.visualViewport?.removeEventListener("resize", onVvChange);
-        window.visualViewport?.removeEventListener("scroll", onVvChange);
-      };
-    }, [isOpen, isDesktop, ref, sheetFooterRef, sheetMode]);
-    // #endregion
-
     const canReturnToChat =
       [jobListOpen, candidateAppOpen, contactCardOpen].filter(Boolean).length > 1;
 
@@ -337,7 +270,22 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     );
 
     return (
-      <div className={`panel${isDesktop ? " panel--desktop" : ""}${actionPanelOpen && isDesktop ? " panel--extended" : ""}`} ref={ref}>
+      <div
+        className={[
+          "panel",
+          isDesktop ? "panel--desktop" : "",
+          actionPanelOpen && isDesktop ? "panel--extended" : "",
+          isAndroidChromeBrowser ? "panel--android-chrome" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        ref={ref}
+        style={
+          isAndroidChromeBrowser
+            ? ({ "--android-chrome-bottom-inset": `${bottomInsetPx}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
         <div className="panel-columns">
           <div className="panel-chat-col">
             <PanelHeader
