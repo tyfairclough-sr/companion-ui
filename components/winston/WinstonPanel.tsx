@@ -222,32 +222,71 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
 
     // #region agent log
     useEffect(() => {
-      const t = setTimeout(() => {
-        const body = bodyRef.current;
-        const actionCol = actionColRef.current;
-        const chatCol = (ref as React.RefObject<HTMLDivElement>)?.current?.querySelector(".panel-chat-col") as HTMLElement | null;
-        const cs = (el: Element | null) => (el ? getComputedStyle(el) : null);
-        const r = (el: Element | null) => (el ? el.getBoundingClientRect() : null);
-        const bodyCs = cs(body);
-        const acCs = cs(actionCol);
-        const chatCs = cs(chatCol);
-        const payload = {
-          isDesktop,
-          actionPanelOpen,
-          jobListOpen,
-          candidateAppOpen,
-          contactCardOpen,
-          chatStreamLoading,
-          jobPresent: !!job,
-          innerWidth: typeof window !== "undefined" ? window.innerWidth : null,
-          actionCol: actionCol ? { opacity: acCs?.opacity, visibility: acCs?.visibility, position: acCs?.position, background: acCs?.backgroundColor, zIndex: acCs?.zIndex, pointerEvents: acCs?.pointerEvents, rect: r(actionCol) } : null,
-          panelBody: body ? { childCount: body.childElementCount, opacity: bodyCs?.opacity, visibility: bodyCs?.visibility, zIndex: bodyCs?.zIndex, rect: r(body) } : null,
-          chatCol: chatCol ? { opacity: chatCs?.opacity, visibility: chatCs?.visibility, rect: r(chatCol) } : null,
-        };
-        fetch('http://127.0.0.1:7893/ingest/3d4f6f99-f80c-42e6-b46f-ea06df6e0712',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7ba003'},body:JSON.stringify({sessionId:'7ba003',runId:'post-fix',hypothesisId:'A,B,C',location:'WinstonPanel.tsx:measure',message:'panel mobile layout snapshot',data:payload,timestamp:Date.now()})}).catch(()=>{});
-      }, 600);
-      return () => clearTimeout(t);
-    }, [isDesktop, actionPanelOpen, jobListOpen, candidateAppOpen, contactCardOpen, chatStreamLoading, job, ref, actionColRef]);
+      if (!isOpen || isDesktop) return;
+
+      const logViewport = (trigger: string) => {
+        const panel = (ref as React.RefObject<HTMLDivElement>)?.current;
+        const footer = sheetFooterRef.current;
+        const inputRow = footer?.querySelector(".panel-input-row") as HTMLElement | null;
+        const vv = window.visualViewport;
+        const footerRect = footer?.getBoundingClientRect();
+        const inputRect = inputRow?.getBoundingClientRect();
+        const panelRect = panel?.getBoundingClientRect();
+        const panelCs = panel ? getComputedStyle(panel) : null;
+        const footerCs = footer ? getComputedStyle(footer) : null;
+
+        const probe = document.createElement("div");
+        probe.style.cssText = "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom)";
+        document.body.appendChild(probe);
+        const safeAreaBottom = getComputedStyle(probe).paddingBottom;
+        document.body.removeChild(probe);
+
+        const visibleBottom = vv ? vv.height + vv.offsetTop : window.innerHeight;
+        const footerBottom = footerRect?.bottom ?? 0;
+        const inputBottom = inputRect?.bottom ?? 0;
+
+        fetch("/api/debug-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: "8f4e86",
+            runId: "initial",
+            hypothesisId: "A,B,C,D,E",
+            location: "WinstonPanel.tsx:viewport",
+            message: "mobile footer viewport metrics",
+            data: {
+              trigger,
+              innerHeight: window.innerHeight,
+              screenHeight: window.screen.height,
+              vvHeight: vv?.height ?? null,
+              vvOffsetTop: vv?.offsetTop ?? null,
+              visibleBottom,
+              panelHeight: panelCs?.height ?? null,
+              panelBottom: panelRect?.bottom ?? null,
+              footerBottom,
+              inputBottom,
+              footerObscuredPx: Math.round((footerBottom - visibleBottom) * 10) / 10,
+              inputObscuredPx: Math.round((inputBottom - visibleBottom) * 10) / 10,
+              footerPaddingBottom: footerCs?.paddingBottom ?? null,
+              safeAreaInsetBottom: safeAreaBottom,
+              sheetMode,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      };
+
+      logViewport("mount");
+      const t = setTimeout(() => logViewport("delayed-600ms"), 600);
+      const onVvChange = () => logViewport("visualViewport-change");
+      window.visualViewport?.addEventListener("resize", onVvChange);
+      window.visualViewport?.addEventListener("scroll", onVvChange);
+      return () => {
+        clearTimeout(t);
+        window.visualViewport?.removeEventListener("resize", onVvChange);
+        window.visualViewport?.removeEventListener("scroll", onVvChange);
+      };
+    }, [isOpen, isDesktop, ref, sheetFooterRef, sheetMode]);
     // #endregion
 
     const canReturnToChat =
