@@ -729,8 +729,6 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;   /* content sits at the bottom, above the input */
-  gap: 12px;
   padding: 16px;
 }
 
@@ -828,12 +826,16 @@ body {
   font-size: 14px;
   line-height: 1.4;
   padding: 10px 16px;
-  border-radius: 16px 0px 16px 16px;
+  border-radius: 16px;
   max-width: 90%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   transform-origin: bottom right;
   animation: chat-bubble-in 200ms ease-out;
+}
+
+.suggestion-chip--first {
+  border-radius: 16px 0 16px 16px;
 }
 
 /* ── AI reply (Winston assistant chat bubble) ── */
@@ -853,6 +855,10 @@ body {
   line-height: 20px;
   padding: 10px 16px;
   border-radius: 8px;
+}
+
+.ai-reply-bubble--first {
+  border-radius: 0 8px 8px 8px;
 }
 
 /* ── Chat loading indicator (post-action processing state) ── */
@@ -1020,6 +1026,10 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.05);
   overflow: hidden;
   color: #383C38;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: fit-content;
 }
 
 /* Header */
@@ -1386,10 +1396,23 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 12px;
   padding: 16px;
   background: white;
+  -webkit-overflow-scrolling: touch;
+}
+
+.panel-body-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+/* Prevent flex children from shrinking when the stream exceeds the viewport */
+.panel-body-stream > * {
+  flex-shrink: 0;
 }
 
 .job-list-layer {

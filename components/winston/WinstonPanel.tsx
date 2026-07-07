@@ -1,21 +1,17 @@
 "use client";
 
-import { forwardRef, useState, useRef, useEffect } from "react";
+import { forwardRef, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { JobPostingResponse, CandidateDetailResponse, JobPostingCandidate } from "@/lib/types";
 import { useAndroidChromeInset } from "@/hooks/useAndroidChromeInset";
 import { useSkeletonReveal } from "@/hooks/useSkeletonReveal";
 import { useSheetSnap } from "@/hooks/useSheetSnap";
-import { CompanionCard } from "./CompanionCard";
-import { AiReply } from "./AiReply";
-import { ChatLoading } from "./ChatLoading";
-import { QuickReplies } from "./QuickReplies";
+import { ChatStream, buildMainChatStreamItems, buildSheetFullHistoryItems, buildSheetPeekStreamItems } from "./ChatStream";
 import { JobListLayer } from "./JobListLayer";
 import { CandidateAppLayer } from "./CandidateAppLayer";
 import { ContactCardLayer } from "./ContactCardLayer";
 import { PanelHeader } from "./PanelHeader";
 import { ActionPanelHeader } from "./ActionPanelHeader";
 import { WelcomeView } from "./WelcomeView";
-import { CompanionCardSkeleton, SuggestionChipSkeleton, QuickRepliesSkeleton } from "./skeletons/LayerSkeletons";
 
 interface WinstonPanelProps {
   isOpen: boolean;
@@ -217,10 +213,10 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
       if (!jobListOpen) setSelectionDisabled(false);
     }, [jobListOpen]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       const el = bodyRef.current;
       if (el) el.scrollTop = el.scrollHeight;
-    }, [sentMessages, scheduling]);
+    }, [sentMessages, scheduling, job, chatStreamLoading]);
 
     const canReturnToChat =
       [jobListOpen, candidateAppOpen, contactCardOpen].filter(Boolean).length > 1;
@@ -237,36 +233,35 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
     const renderSheetPeekContent = () => {
       if (!latestExchange) return null;
       return (
-        <>
-          <div className="suggestion-chip">{latestExchange.prompt}</div>
-          {latestExchange.reply === null ? (
-            <ChatLoading />
-          ) : (
-            <AiReply>{latestExchange.reply}</AiReply>
-          )}
-        </>
+        <ChatStream
+          items={buildSheetPeekStreamItems(latestExchange)}
+          job={job}
+          quickRepliesUsed={quickRepliesUsed}
+          onToggleSelect={onToggleSelect}
+          onOpenMore={onOpenJobList}
+          onOpenCandidate={onOpenCandidate}
+          onScheduleSelected={handleScheduleSelected}
+          onQuickReply={handleQuickReply}
+        />
       );
     };
 
     const renderSheetFullHistory = () => (
-      <>
-        {!chatStreamLoading ? (
-          <>
-            <div className="suggestion-chip">show my Sales Executive job</div>
-            <AiReply>
-              Sure thing Ali, you have this job that is currently in the hiring stage.
-            </AiReply>
-          </>
-        ) : null}
-        {sentMessages.map((message, index) => (
-          <div className="suggestion-chip" key={index}>
-            {message}
-          </div>
-        ))}
-        {latestExchange?.reply === null ? <ChatLoading /> : null}
-        {latestExchange?.reply ? <AiReply>{latestExchange.reply}</AiReply> : null}
-        {scheduling ? <ChatLoading /> : null}
-      </>
+      <ChatStream
+        items={buildSheetFullHistoryItems({
+          chatStreamLoading,
+          sentMessages,
+          latestExchange,
+          scheduling,
+        })}
+        job={job}
+        quickRepliesUsed={quickRepliesUsed}
+        onToggleSelect={onToggleSelect}
+        onOpenMore={onOpenJobList}
+        onOpenCandidate={onOpenCandidate}
+        onScheduleSelected={handleScheduleSelected}
+        onQuickReply={handleQuickReply}
+      />
     );
 
     return (
@@ -306,38 +301,22 @@ export const WinstonPanel = forwardRef<HTMLDivElement, WinstonPanelProps>(
 
             <div className="panel-body-wrap">
               <div className="panel-body" ref={bodyRef}>
-                {chatStreamLoading ? (
-                  <SuggestionChipSkeleton />
-                ) : (
-                  <div className="suggestion-chip">show my Sales Executive job</div>
-                )}
-                {chatStreamLoading ? null : (
-                  <AiReply>
-                    Sure thing Ali, you have this job that is currently in the hiring stage.
-                  </AiReply>
-                )}
-                {chatStreamLoading ? (
-                  <CompanionCardSkeleton />
-                ) : job ? (
-                  <CompanionCard
-                    job={job}
-                    onToggleSelect={onToggleSelect}
-                    onOpenMore={onOpenJobList}
-                    onOpenCandidate={onOpenCandidate}
-                    onScheduleSelected={handleScheduleSelected}
-                  />
-                ) : null}
-                {chatStreamLoading ? (
-                  <QuickRepliesSkeleton />
-                ) : (
-                  <QuickReplies onSelect={handleQuickReply} disabled={quickRepliesUsed} />
-                )}
-                {sentMessages.map((message, index) => (
-                  <div className="suggestion-chip" key={index}>
-                    {message}
-                  </div>
-                ))}
-                {scheduling ? <ChatLoading /> : null}
+                <div className="panel-body-stream">
+                <ChatStream
+                  items={buildMainChatStreamItems({
+                    chatStreamLoading,
+                    sentMessages,
+                    scheduling,
+                  })}
+                  job={job}
+                  quickRepliesUsed={quickRepliesUsed}
+                  onToggleSelect={onToggleSelect}
+                  onOpenMore={onOpenJobList}
+                  onOpenCandidate={onOpenCandidate}
+                  onScheduleSelected={handleScheduleSelected}
+                  onQuickReply={handleQuickReply}
+                />
+                </div>
               </div>
             </div>
 

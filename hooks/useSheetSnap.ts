@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useRef, useState } from "react";
 
 export type SheetSnap = 0 | 1 | 2;
@@ -31,16 +33,17 @@ export function useSheetSnap() {
     const footerHeight = footer?.offsetHeight ?? 0;
     const bodyClientHeight = bodyEl?.clientHeight ?? 0;
     const chrome = Math.max(footerHeight - bodyClientHeight, 120);
-    const full = Math.max(window.innerHeight * FULL_VIEWPORT_RATIO - chrome, PEEK_BODY_HEIGHT + 48);
+    const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 0;
+    const full = Math.max(viewportHeight * FULL_VIEWPORT_RATIO - chrome, PEEK_BODY_HEIGHT + 48);
 
     return { peek: PEEK_BODY_HEIGHT, full, chrome };
   }, []);
 
   const heightForSnap = useCallback(
     (target: SheetSnap) => {
-      const { peek, full } = getSnapHeights();
       if (target === 0) return 0;
-      if (target === 1) return peek;
+      if (target === 1) return PEEK_BODY_HEIGHT;
+      const { full } = getSnapHeights();
       return full;
     },
     [getSnapHeights]
