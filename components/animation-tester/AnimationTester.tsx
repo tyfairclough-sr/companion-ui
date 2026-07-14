@@ -20,10 +20,12 @@ const EASE_OPTIONS = [
 interface AnimationTesterProps {
   isOpen: boolean;
   notifVisible: boolean;
+  backOfficeOpen: boolean;
   settings: AnimationSettings;
   codeSnippets: { avatar: string; notif: string; panel: string; actionPanel: string };
   onTogglePanel: () => void;
   onTriggerNotif: () => void;
+  onToggleBackOffice: () => void;
   onSettingsChange: (patch: Partial<AnimationSettings>) => void;
   onSaveDefault: () => void;
   formatDuration: (ms: number) => string;
@@ -34,10 +36,12 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
     {
       isOpen,
       notifVisible,
+      backOfficeOpen,
       settings,
       codeSnippets,
       onTogglePanel,
       onTriggerNotif,
+      onToggleBackOffice,
       onSettingsChange,
       onSaveDefault,
       formatDuration,
@@ -163,6 +167,14 @@ export const AnimationTester = forwardRef<HTMLDivElement, AnimationTesterProps>(
           onClick={onTogglePanel}
         >
           {isOpen ? "Close panel" : "Open panel"}
+        </button>
+
+        <button
+          className={`toggle-btn toggle-btn--secondary${backOfficeOpen ? " is-open" : ""}`}
+          type="button"
+          onClick={onToggleBackOffice}
+        >
+          {backOfficeOpen ? "Hide back-office slideout" : "Back-office slideout"}
         </button>
 
         {card(

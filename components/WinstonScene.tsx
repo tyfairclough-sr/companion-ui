@@ -1,12 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import gsap from "gsap";
 import { AnimationTester } from "@/components/animation-tester/AnimationTester";
 import { AvatarTrigger } from "@/components/avatar/AvatarTrigger";
+import { BackOfficeSlideout } from "@/components/shell/BackOfficeSlideout";
 import { WinstonPanel } from "@/components/winston/WinstonPanel";
 import { useAnimationSettings, computeCodeSnippets } from "@/hooks/useAnimationSettings";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { usePanelAnimations } from "@/hooks/usePanelAnimations";
+import { ACTION_PANEL_WIDTH } from "@/lib/animation";
+
+const BACK_OFFICE_HIDE_X = ACTION_PANEL_WIDTH + 20;
 import {
   fetchCandidate,
   fetchCandidates,
@@ -68,6 +73,8 @@ export function WinstonScene() {
   const [job, setJob] = useState<JobPostingResponse | null>(null);
   const [allCandidates, setAllCandidates] = useState<JobPostingCandidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateDetailResponse | null>(null);
+  const [backOfficeOpen, setBackOfficeOpen] = useState(false);
+  const backOfficeRef = useRef<HTMLDivElement>(null);
 
   const animationRefs = useMemo(
     () => ({
@@ -151,15 +158,53 @@ export function WinstonScene() {
     [animations]
   );
 
+  // Independent of avatar/chat panel animations — never touches usePanelAnimations.
+  const backOfficeInitialized = useRef(false);
+
+  useEffect(() => {
+    if (!backOfficeRef.current) return;
+
+    if (!backOfficeInitialized.current) {
+      backOfficeInitialized.current = true;
+      gsap.set(backOfficeRef.current, {
+        x: backOfficeOpen ? 0 : BACK_OFFICE_HIDE_X,
+        autoAlpha: backOfficeOpen ? 1 : 0,
+      });
+      return;
+    }
+
+    if (backOfficeOpen) {
+      gsap.to(backOfficeRef.current, {
+        x: 0,
+        autoAlpha: 1,
+        duration: 0.45,
+        ease: "power2.out",
+        overwrite: true,
+      });
+    } else {
+      gsap.to(backOfficeRef.current, {
+        x: BACK_OFFICE_HIDE_X,
+        autoAlpha: 0,
+        duration: 0.35,
+        ease: "power2.in",
+        overwrite: true,
+      });
+    }
+  }, [backOfficeOpen]);
+
   return (
     <>
+      <BackOfficeSlideout ref={backOfficeRef} />
+
       <AnimationTester
         isOpen={animations.isOpen}
         notifVisible={animations.notifVisible}
+        backOfficeOpen={backOfficeOpen}
         settings={settings}
         codeSnippets={codeSnippets}
         onTogglePanel={animations.toggle}
         onTriggerNotif={animations.triggerNotif}
+        onToggleBackOffice={() => setBackOfficeOpen((v) => !v)}
         onSettingsChange={updateSettings}
         onSaveDefault={saveAsDefault}
         formatDuration={formatDuration}
